@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 
 def wait():
     """Introduce una espera hasta que se pulse el intro.
-       Limpia el plot anterior"""
+       Limpia el plot anterior."""
 
     input("(Pulsa [Enter] para continuar...)")
     plt.close()
@@ -37,7 +37,7 @@ def ex1():
     """Realiza una serie de acciones con scikit-learn:
          1. Leer la base de datos IRIS.
          2. Obtener las características (X) y las clases (y).
-         3. Quedarse con las dos últimas características,
+         3. Quedarse con las dos últimas características.
          4. Mostrar en un scatter plot los datos, coloreando cada clase
             con un color distinto, con una leyenda."""
 
@@ -60,7 +60,8 @@ def ex1():
     # Mostramos la información en un scatter plot con leyenda
     plt.figure(figsize = (8, 6))
     scatter = plt.scatter(
-        X[:, 0], X[:, 1], c = y, cmap = ListedColormap(['r', 'g', 'b']), edgecolors = 'k')
+        X[:, 0], X[:, 1], c = y, cmap = ListedColormap(['r', 'g', 'b']),
+        edgecolors = 'k')
     plt.legend(
         handles = scatter.legend_elements()[0], title = "Classes",
         labels = class_names.tolist(), loc = "upper left")
