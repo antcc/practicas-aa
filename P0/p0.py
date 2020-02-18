@@ -30,7 +30,7 @@ def wait():
     plt.close()
 
 #
-# EJERCICIO 1:
+# EJERCICIO 1: DATASET IRIS
 #
 
 def ex1():
@@ -69,6 +69,10 @@ def ex1():
     plt.show(block = False)
     wait()
 
+#
+# EJERCICIO 2: TRAIN-TEST SPLIT
+#
+
 def ex2():
     """Separa los datos de IRIS en training (80%) y test (20%),
        respetando la proporción de clases."""
@@ -101,10 +105,14 @@ def ex2():
         test_prop = len(y_test[y_test == i]) / y_test.shape[0]
 
         print("Proporción de la clase", i)
-        print("Dataset completo:", orig_prop)
-        print("Training:", train_prop)
-        print("Test:", test_prop)
+        print("  Dataset completo:", orig_prop)
+        print("  Training:", train_prop)
+        print("  Test:", test_prop)
     wait()
+
+#
+# EJERCICIO 3: REPRESENTACIÓN DE FUNCIONES
+#
 
 def ex3():
     """Representa algunas funciones trigonométricas en [0, 2π]."""
@@ -123,7 +131,6 @@ def ex3():
     plt.legend()
     plt.show(block = False)
     wait()
-
 
 #
 # FUNCIÓN PRINCIPAL
