@@ -58,6 +58,7 @@ def ex1():
     X = X[:, -2:]
 
     # Mostramos la información en un scatter plot con leyenda
+    # y con ejes adecuadamente etiquetados
     plt.figure(figsize = (8, 6))
     scatter = plt.scatter(
         X[:, 0], X[:, 1], c = y, cmap = ListedColormap(['r', 'g', 'b']),
@@ -81,10 +82,10 @@ def ex2():
     # Cargamos los datos
     iris = datasets.load_iris()
     X, y = iris.data, iris.target
-    n = len(iris.target_names)
 
     # Realizamos el split de train-test.
-    # Con el parámetro stratify = y mantenemos la proporción de clases
+    # Con stratify = y mantenemos la proporción de clases
+    # Con shuffle = True (por defecto) el reparto es aleatorio
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, train_size = 0.8, shuffle = True, stratify = y)
 
@@ -100,7 +101,7 @@ def ex2():
         print(pair)
 
     # Comprobamos que se mantiene la proporción de clases
-    for i in range(n):
+    for i in range(len(iris.target_names)):
         orig_prop = len(y[y == i]) / y.shape[0]
         train_prop = len(y_train[y_train == i]) / y_train.shape[0]
         test_prop = len(y_test[y_test == i]) / y_test.shape[0]
