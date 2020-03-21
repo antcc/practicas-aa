@@ -48,11 +48,9 @@ def ex1():
     X = iris.data
     y = iris.target
 
-    # Mostramos los nombres de las características y las clases
+    # Guardamos los nombres de las características y las clases
     feature_names = iris.feature_names
     class_names = iris.target_names
-    print("Características:", feature_names)
-    print("Etiquetas:", class_names)
 
     # Nos quedamos con las dos últimas características
     X = X[:, -2:]
@@ -91,14 +89,7 @@ def ex2():
 
     # Mostramos los resultados
     print("Número de ejemplos de entrenamiento:", X_train.shape[0])
-    print("Primeros 5 ejemplos de entrenamiento y sus clases:")
-    for pair in list(zip(X_train[:5].tolist(), y_train[:5])):
-        print(pair)
-
     print("Número de ejemplos de test:", X_test.shape[0])
-    print("Primeros 5 ejemplos de test y sus clases:")
-    for pair in list(zip(X_test[:5].tolist(), y_test[:5])):
-        print(pair)
 
     # Comprobamos que se mantiene la proporción de clases
     for i in range(len(iris.target_names)):
