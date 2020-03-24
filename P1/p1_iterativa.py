@@ -178,7 +178,7 @@ def ap3A():
 
         # Mostramos la gráfica con la evolución del valor de la función
         plt.plot(range(max_it + 1), [f(*w) for w in evol],
-            label = r"$\eta$ = " + str(lr))
+            'o', label = r"$\eta$ = " + str(lr), linestyle = '--')
 
     plt.legend()
     plt.show(block = False)
@@ -195,19 +195,16 @@ def ap3B():
              np.array([1.5, 1.5]),
              np.array([1.0, -1.0])]
 
+    print("    Tasa de aprendizaje:", lr)
     print("    Número de iteraciones:", max_it)
+    print("\n    {:^12}  {:^25}  {:^17}".format("Inicial", "Mínimo", "Valor"))
 
-    for lr in [0.01, 0.1]:
-        print("\n    Tasa de aprendizaje:", lr)
-        print("    -------------------------------------------------")
-        print("    {:^12}  {:^25}  {:^17}".format("Inicial", "Mínimo", "Valor"))
+    for w in w_lst:
+        # Ejecutamos el algoritmo de gradiente descendente
+        wmin, _, _ = gd(f, df, w, lr, max_it)
 
-        for w in w_lst:
-            # Ejecutamos el algoritmo de gradiente descendente
-            wmin, _, _ = gd(f, df, w, lr, max_it)
-
-            # Imprimimos los resultados
-            print("    {}    {}      {: 1.5f}".format(w, wmin, f(*wmin)))
+        # Imprimimos los resultados
+        print("    {}    {}      {: 1.5f}".format(w, wmin, f(*wmin)))
 
 def ex3():
     """Ejecución de los distintos apartados del ejercicio 3."""
@@ -222,6 +219,11 @@ def ex3():
 #
 
 def main():
+    """Función principal. Ejecuta el ejercicio paso a paso."""
+    
+    # Número de decimales fijo para salida de vectores
+    np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
+
     print("-------- EJERCICIO SOBRE BÚSQUEDA ITERATIVA DE ÓPTIMOS --------")
     print("--- EJERCICIO 2 ---")
     ex2()
