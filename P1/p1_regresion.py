@@ -65,7 +65,7 @@ def read_data(file_X, file_y):
 
     return X, y
 
-def scatter_plot(X, axis, y = None, ws = None, ws_labels = None):
+def scatter_plot(X, axis, y = None, ws = None, ws_labels = None, is_linear = True):
     """Muestra un scatter plot con leyenda y (opcionalmente) rectas
        de regresión.
          - X: vector de características con primera componente 1, y
@@ -74,7 +74,8 @@ def scatter_plot(X, axis, y = None, ws = None, ws_labels = None):
          - y: clases.
          - ws: vectores de pesos
          - ws_labels: etiquetas de los vectores de pesos. Debe
-           aparecer obligatoriamente si 'ws' no es vacío."""
+           aparecer obligatoriamente si 'ws' no es vacío.
+         - is_linear: controla si las características son lineales."""
 
     # Establecemos límites y tamaño del plot
     plt.figure(figsize = (8, 6))
@@ -99,17 +100,21 @@ def scatter_plot(X, axis, y = None, ws = None, ws_labels = None):
     plt.xlabel(axis[0])
     plt.ylabel(axis[1])
 
-    # Mostramos rectas de regresión
+    # Mostramos modelos ajustados
     if ws is not None:
-        """x = np.array([xmin, xmax])
-        for w, l in zip(ws, ws_labels):
-            plt.plot(x, (-w[0] - w[1] * x) / w[2], label = l, linewidth = 2)
-        plt.legend(loc = "lower right")"""
+        if is_linear:
+            x = np.array([xmin, xmax])
+            for w, l in zip(ws, ws_labels):
+                plt.plot(x, (-w[0] - w[1] * x) / w[2], label = l, linewidth = 2)
+        else:
+            xx, yy = np.meshgrid(np.linspace(xmin, xmax, 100), np.linspace(ymin, ymax, 100))
+            h = lambda x, y, w: np.array([1, x, y, x * y, x * x, y * y]).dot(w)
+            for w, l in zip(ws, ws_labels):
+                z = h(xx, yy, w)
+                plt.contour(xx, yy, z, levels = [0]).collections[0].set_label(l)
 
-        xx, yy = np.meshgrid(np.linspace(xmin - 0.2, xmax + 0.2, 1000), np.linspace(ymin - 0.2, ymax + 0.2, 1000))
-        g = lambda x, y, w: np.array([1, x, y, x*y, x*x, y*y]).dot(w)
-        z = g(xx, yy, ws[0])
-        plt.contour(xx, yy, z)
+        plt.legend(loc = "lower right")
+
     if y is not None:
         plt.gca().add_artist(legend1)
 
@@ -179,7 +184,7 @@ def ex1():
     X_test, y_test = read_data(PATH + "X_test.npy", PATH + "y_test.npy")
 
     # Estimamos un modelo SGD y otro con pseudoinversa
-    w_sgd = sgd(X_train, y_train, 0.05, 32, 100)
+    w_sgd = sgd(X_train, y_train, 0.1, 32, 100)
     w_pseudo = pseudoinverse(X_train, y_train)
 
     # Mostramos los resultados
@@ -237,10 +242,11 @@ def generate_features(n, is_linear):
 
     return X, y
 
-def experiment(is_linear, show = False):
+def experiment(is_linear, lr, show = False):
     """Realización del experimento descrito en los apartados a), b) y c) del
        ejercicio 2. Devuelve los errores E_in y E_out.
          - is_linear: controla si las características son lineales o no lineales.
+         - lr: learning rate para SGD.
          - show: controla si se muestran por pantalla los resultados."""
 
     X, y = generate_features(1000, is_linear)
@@ -252,7 +258,7 @@ def experiment(is_linear, show = False):
         scatter_plot(X, ["x1", "x2"], y)
 
     # Ajustamos un modelo de regresión lineal mediante SGD
-    w = sgd(X, y, 0.05, 32, 100)
+    w = sgd(X, y, lr, 32, 100)
 
     # Generamos datos de test
     X_test, y_test = generate_features(1000, is_linear)
@@ -264,11 +270,12 @@ def experiment(is_linear, show = False):
     # Mostramos los resultados
     if show:
         model = ("SGD con características "
-                 + "no lineales" if not is_linear else "lineales.")
-        print("  Errores en el experimento uniforme:")
+                 + ("no lineales" if not is_linear else "lineales."))
+        print("  Errores en el experimento "
+              + ("no lineal:" if not is_linear else "lineal:"))
         print("    E_in:", ein)
         print("    E_out:", eout)
-        scatter_plot(X, ["x1", "x2"], y, [w], [model])
+        scatter_plot(X, ["x1", "x2"], y, [w], [model], is_linear)
 
     return [ein, eout]
 
@@ -279,26 +286,32 @@ def ex2():
     # Número de ejecuciones del experimento
     N = 1000
 
-    """# Ejecutamos el experimento lineal una vez mostrando gráficas y resultados
-    experiment(is_linear = True, show = True)
+    print("  Realizando experimento lineal "
+          + "con características [1, x_1, x_2].")
+
+    # Ejecutamos el experimento lineal una vez mostrando gráficas y resultados
+    experiment(is_linear = True, lr = 0.1, show = True)
 
     # Realizamos el experimento lineal 1000 veces
     errors_l = np.array([0.0, 0.0])
     for _ in range(N):
-        errors_l += experiment(is_linear = True)
+        errors_l += experiment(is_linear = True, lr = 0.1)
     errors_l /= N
 
     print("  Errores medios en 1000 experimentos con características lineales:")
     print("    E_in:", errors_l[0])
-    print("    E_out:", errors_l[1])"""
+    print("    E_out:", errors_l[1])
+
+    print("\n  Realizando experimento no lineal "
+          + "con características [1, x_1, x_2, x_1 * x_2, x_1^2, x_2^2].")
 
     # Ejecutamos el experimento no lineal una vez mostrando gráficas y resultados
-    experiment(is_linear = False, show = True)
+    experiment(is_linear = False, lr = 0.3, show = True)
 
     # Realizamos el experimento no lineal 1000 veces
     errors_nl = np.array([0.0, 0.0])
     for _ in range(N):
-        errors_nl += experiment(is_linear= False)
+        errors_nl += experiment(is_linear= False, lr = 0.3)
     errors_nl /= N
 
     print("  Errores medios en 1000 experimentos con características no lineales:")
@@ -320,7 +333,7 @@ def main():
 
     print("-------- EJERCICIO SOBRE REGRESIÓN LINEAL --------")
     print("--- EJERCICIO 1 ---")
-    #ex1()
+    ex1()
     print("\n--- EJERCICIO 2 ---")
     ex2()
 
