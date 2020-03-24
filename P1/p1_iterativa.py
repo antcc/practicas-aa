@@ -15,6 +15,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 #
 # FUNCIONES AUXILIARES
@@ -86,7 +87,7 @@ def ex2():
     """Ejecución de los distintos apartados del ejercicio 2."""
 
     # Fijamos los parámetros de ejecución
-    w = np.array([1.0, 1.0], dtype = np.double)
+    w = np.array([1.0, 1.0], dtype = np.float64)
     lr = 0.1
     eps = 1e-14
     max_it = np.inf
@@ -105,6 +106,61 @@ def ex2():
 #
 # EJERCICIO 3: MINIMIZACIÓN DE LA FUNCIÓN f(x, y)
 #
+
+def surface_plot(f, fname, ws = []):
+    """Muestra una figura 3D de la superficie dada por z = f(x, y),
+       eventualmente junto con una serie de puntos destacados.
+         - f: función a considerar.
+         - fname: nombre de la función.
+         - ws: lista de puntos (2D) destacados."""
+
+    # Establecemos el rango y las variables del plot
+    x = np.linspace(0, 4, 50)
+    y = np.linspace(-4, 0, 50)
+    X, Y = np.meshgrid(x, y)
+    Z = f(X, Y)
+
+    # Dibujamos la superficie
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel(fname + "(x, y)")
+    ax.plot_surface(
+        X, Y, Z,
+        alpha = 0.5)
+
+    # Dibujamos los puntos destacados
+    for w in ws:
+        w = w[:, np.newaxis]
+        ax.plot(*w, f(*w), 'ro', markersize = 10)
+
+    plt.show(block = True)
+    wait()
+
+def contour_plot(f, w = None):
+    """Pinta el diagrama de contorno para la función 'f = f(x, y)',
+       posiblemente junto a un punto destacado 'w'."""
+
+    # Establecemos el rango del plot
+    x = np.arange(-2, 2, 0.01)
+    y = np.arange(-2, 2, 0.01)
+
+    # Pintamos el diagrama y el punto del mínimo
+    fig = plt.figure()
+    xx, yy = np.meshgrid(x, y, sparse = True)
+    z = f(xx, yy)
+    cont = plt.contourf(x, y, z)
+    fig.colorbar(cont)
+    if w is not None:
+        plt.plot(*w, 'r*', markersize = 5)
+
+    # Información del plot
+    plt.xlabel('x')
+    plt.ylabel('y')
+
+    plt.show(block = False)
+    wait()
 
 def f(x, y):
     """Función f(x, y) del ejercicio 3."""
@@ -128,31 +184,6 @@ def df(x, y):
     """Gradiente de la función f(x, y)."""
 
     return np.array([dfx(x, y), dfy(x, y)])
-
-def contour_plot(f, w = None):
-    """Pinta el diagrama de contorno para la función 'f = f(x, y)',
-       posiblemente junto a un punto destacado 'w'."""
-
-    # Establecemos el rango del plot
-    x = np.arange(-2, 2, 0.01)
-    y = np.arange(-2, 2, 0.01)
-
-    # Pintamos el diagrama y el punto del mínimo
-    fig = plt.figure()
-    xx, yy = np.meshgrid(x, y, sparse = True)
-    z = f(xx, yy)
-    cont = plt.contourf(x, y, z)
-    fig.colorbar(cont)
-    if w is not None:
-        plt.plot(*w, 'r*', markersize = 5)
-
-    # Información del plot
-    plt.title('Diagrama de contorno para la función f(x, y)')
-    plt.xlabel('x')
-    plt.ylabel('y')
-
-    plt.show(block = False)
-    wait()
 
 def ap3A():
     """Ejecución del apartado a) del ejercicio 3."""
@@ -220,7 +251,7 @@ def ex3():
 
 def main():
     """Función principal. Ejecuta el ejercicio paso a paso."""
-    
+
     # Número de decimales fijo para salida de vectores
     np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
 
