@@ -15,12 +15,18 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap
 
 #
 # PARÁMETROS GLOBALES
 #
 
 PATH = "datos/"
+SEED = 2020
+EPS = 1e-10
+CLASSES = [1, 5]
+LABEL_C1 = -1
+LABEL_C2 = 1
 
 #
 # FUNCIONES AUXILIARES
@@ -33,203 +39,290 @@ def wait():
     input("\n(Pulsa [Enter] para continuar...)\n")
     plt.close()
 
+def read_data(file_X, file_y):
+    """Leer archivos de características y clases en un par de
+       vectores El formato de salida de las características es [1, x_1, x_2].
+         - file_X: archivo con las características bidimensionales.
+         - file_y: archivo con las clases."""
+
+    # Leemos los ficheros
+    data_X = np.load(file_X)
+    data_y = np.load(file_y)
+    X = []
+    y = []
+
+    # Solo guardamos los datos cuya clase sea la 1 o la 5
+    for i in range(0, data_y.size):
+        if data_y[i] in CLASSES:
+            if data_y[i] == CLASSES[0]:
+                y.append(LABEL_C1)
+            else:
+                y.append(LABEL_C2)
+            X.append(np.array([1, data_X[i][0], data_X[i][1]]))
+
+    X = np.array(X, np.float64)
+    y = np.array(y, np.float64)
+
+    return X, y
+
+def scatter_plot(X, axis, y = None, ws = None, ws_labels = None):
+    """Muestra un scatter plot con leyenda y (opcionalmente) rectas
+       de regresión.
+         - X: vector de características con primera componente 1, y
+           con exactamente dos grados de libertad.
+         - axis: nombres de los ejes.
+         - y: clases.
+         - ws: vectores de pesos
+         - ws_labels: etiquetas de los vectores de pesos. Debe
+           aparecer obligatoriamente si 'ws' no es vacío."""
+
+    # Establecemos límites y tamaño del plot
+    plt.figure(figsize = (8, 6))
+    xmin, xmax = np.min(X[:, 1]), np.max(X[:, 1])
+    ymin, ymax = np.min(X[:, 2]), np.max(X[:, 2])
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+
+    if y is None:
+        c = [1 for _ in range(len(X))]
+    else:
+        c = y
+
+    # Mostramos scatter plot con leyenda
+    scatter = plt.scatter(
+        X[:, 1], X[:, 2], c = c, cmap = ListedColormap(['r', 'lime']),
+        edgecolors = 'k')
+    if y is not None:
+        legend1 = plt.legend(
+            *scatter.legend_elements(), title = "Clases",
+            loc = "upper left")
+    plt.xlabel(axis[0])
+    plt.ylabel(axis[1])
+
+    # Mostramos rectas de regresión
+    if ws is not None:
+        """x = np.array([xmin, xmax])
+        for w, l in zip(ws, ws_labels):
+            plt.plot(x, (-w[0] - w[1] * x) / w[2], label = l, linewidth = 2)
+        plt.legend(loc = "lower right")"""
+
+        xx, yy = np.meshgrid(np.linspace(xmin - 0.2, xmax + 0.2, 1000), np.linspace(ymin - 0.2, ymax + 0.2, 1000))
+        g = lambda x, y, w: np.array([1, x, y, x*y, x*x, y*y]).dot(w)
+        z = g(xx, yy, ws[0])
+        plt.contour(xx, yy, z)
+    if y is not None:
+        plt.gca().add_artist(legend1)
+
+    plt.show(block = False)
+    wait()
+
 #
-# EJERCICIO 1: IMPLEMENTACIÓN DE GRADIENTE DESCENDENTE
+# EJERCICIO 1: AJUSTE DE MODELOS DE REGRESIÓN LINEAL
 #
 
-def gd(f, df, w, lr, max_it, eps = -np.inf):
-    """Implementación del algoritmo iterativo de gradiente descendente.
-         - f = f(x, y): función real-valuada a optimizar.
-         - df = df(x, y): gradiente de f.
-         - w = (u, v): punto inicial.
+def sgd(X, y, lr, batch_size, max_it):
+    """Implementación del algoritmo de gradiente descendente estocástico. Devuelve
+       el vector de pesos encontrado.
+         - X: vector de características con primera componente 1.
+         - y: vector de etiquetas.
          - lr: valor del learning rate.
          - max_it: número máximo de iteraciones (criterio de parada).
-         - eps: mínimo valor admisible de f (criterio de parada opcional).
+         - batch_size: tamaño del minibatch."""
 
-       Devuelve:
-         - valor del mínimo encontrado.
-         - número de iteraciones realizadas.
-         - lista con la evolución de los puntos en el algoritmo."""
-
-    w_ = w  # No modificamos el parámetro w
     it = 0
-    evol = [w_]
+    n = len(X)
+    dims = len(X[0])
+    idxs = np.arange(n)  # Vector de índices
+    w = np.zeros((dims,))  # Punto inicial
 
-    while it < max_it and f(*w_) > eps:
-        w_ = w_ - lr * df(*w_)
-        evol += [w_]
+    while it < max_it:
+        # Barajamos los datos en cada pasada completa
+        if it == 0 or it * batch_size > n:
+            np.random.shuffle(idxs)
+
+        # Procesamos cada minibatch de forma secuencial
+        idx = idxs[it * batch_size:(it + 1) * batch_size]
+
+        # Actualizamos el vector de pesos
+        w = w - lr * (2 / batch_size) * (X[idx].T.dot(X[idx].dot(w) - y[idx]))
         it += 1
 
-    return w_, it, evol
+    return w
+
+def pseudoinverse(X, y):
+    """Obtiene un vector de pesos a través del método de la pseudoinversa
+       para resolver el problema de mínimos cuadrados. Se emplea la
+       descomposición SVD para evitar el cálculo de matrices inversas.
+         - X: vector de características con primera componente 1.
+         - y: vector de etiquetas."""
+
+    dims = len(X[0])
+
+    u, s, v = np.linalg.svd(X)
+    d = np.diag([1 / l if l > EPS else 0.0 for l in s])
+    return (v.T @ d @ u.T[0:dims]).dot(y)
+
+def err(w, X, y):
+    """Expresión del error cometido por un modelo de regresión lineal.
+         - w: vector de pesos.
+         - X: vector de características de la forma [1, x_1, x_2]-
+         - y: vector de etiquetas."""
+
+    return 1 / len(X) * ((X.dot(w) - y) ** 2).sum()
+
+def ex1():
+    """Ajuste de dos modelos de regresión lineal, usando SGD y el
+       método de la pseudoinversa."""
+
+    # Cargamos los datos
+    X_train, y_train = read_data(PATH + "X_train.npy", PATH + "y_train.npy")
+    X_test, y_test = read_data(PATH + "X_test.npy", PATH + "y_test.npy")
+
+    # Estimamos un modelo SGD y otro con pseudoinversa
+    w_sgd = sgd(X_train, y_train, 0.05, 32, 100)
+    w_pseudo = pseudoinverse(X_train, y_train)
+
+    # Mostramos los resultados
+    print("  Vector de pesos con SGD:", w_sgd)
+    print("  Vector de pesos con pseudoinversa:", w_pseudo)
+    scatter_plot(
+        X_train, ["Intensidad promedio", "Simetría"],
+        y_train, [w_sgd, w_pseudo],
+        ["SGD", "Pseudoinversa"])
+
+    # Mostramos los errores
+    print("  Errores con SGD:")
+    print("    E_in:", err(w_sgd, X_train, y_train))
+    print("    E_out:", err(w_sgd, X_test, y_test))
+
+    print("\n  Errores con Pseudoinversa:")
+    print("    E_in:", err(w_pseudo, X_train, y_train))
+    print("    E_out:", err(w_pseudo, X_test, y_test))
 
 #
-# EJERCICIO 2: MINIMIZACIÓN DE LA FUNCIÓN E(u, v)
+# EJERCICIO 2: EVOLUCIÓN DEL ERROR CON LA COMPLEJIDAD DEL MODELO
 #
 
-def E(u, v):
-    """Función E(u, v) del ejercicio 2."""
+def uniform_data(n, d, size):
+    """Genera 'n' puntos de dimension 'd' uniformente distribuidos en el hipercubo
+       definido por [-size, size]"""
 
-    return (u * np.exp(v) - 2 * v * np.exp(-u)) ** 2
-
-def dEu(u, v):
-    """Derivada parcial de la función E(u,v) con respecto a u."""
-
-    return (2 * (u * np.exp(v) - 2 * v * np.exp(-u))
-        * (np.exp(v) + 2 * v * np.exp(-u)))
-
-def dEv(u, v):
-    """Derivada parcial de la función E(u,v) con respecto a v."""
-
-    return (2 * (u * np.exp(v) - 2 * v * np.exp(-u))
-        * (u * np.exp(v) - 2 * np.exp(-u)))
-
-def dE(u, v):
-    """Gradiente de la función E(u, v)."""
-
-    return np.array([dEu(u, v), dEv(u, v)])
-
-def ex2():
-    """Ejecución de los distintos apartados del ejercicio 2."""
-
-    # Fijamos los parámetros de ejecución
-    w = np.array([1.0, 1.0], dtype = np.double)
-    lr = 0.1
-    eps = 1e-14
-    max_it = np.inf
-
-    # Ejecutamos el algoritmo de gradiente descendente
-    wmin, it, _ = gd(E, dE, w, lr, max_it, eps)
-
-    # Mostramos los resultados que contestan a los apartados b) y c)
-    print(f"  Punto inicial: ({w[0]}, {w[1]})")
-    print("  Tasa de aprendizaje:", lr)
-    print("  Tolerancia:", eps)
-    print("  Número de iteraciones:", it)
-    print(f"  Mínimo: ({wmin[0]}, {wmin[1]})")
-    print("  Valor del mínimo:", E(*wmin))
-
-#
-# EJERCICIO 3: MINIMIZACIÓN DE LA FUNCIÓN f(x, y)
-#
+    return np.random.uniform(-size, size, (n, d))
 
 def f(x, y):
-    """Función f(x, y) del ejercicio 3."""
+    """Función signo para asignar etiquetas."""
 
-    return ((x - 2) ** 2 + 2 * (y + 2) ** 2
-        + 2 * np.sin(2 * np.pi * x) * np.sin(2 * np.pi * y))
+    return np.sign((x - 0.2) ** 2 + y * y - 0.6)
 
-def dfx(x, y):
-    """Derivada parcial de la función f(x, y) con respecto a x."""
+def generate_features(n, is_linear):
+    """Genera características para el experimento del ejercicio 2.
+         - n: número de puntos a generar.
+         - is_linear: si es True, las características son [1, x_1, x_2]. En
+           otro caso, son [1, x_1, x_2, x_1x_2, x_1^2, x_2^2]."""
 
-    return (2 * (x - 2)
-        + 4 * np.pi * np.sin(2 * np.pi * y) * np.cos(2 * np.pi * x))
+    # Generamos una muestra de 'n' puntos en [-1, 1] x [-1, 1]
+    X = uniform_data(n, 2, 1)
+    X = np.hstack((np.ones((n, 1)), X))
+    if not is_linear:
+        X = np.hstack((
+            X,
+            (X[:, 1] * X[:, 2]).reshape(n, 1),
+            (X[:, 1] ** 2).reshape(n, 1),
+            (X[:, 2] ** 2).reshape(n, 1)))
 
-def dfy(x, y):
-    """Derivada parcial de la función f(x, y) con respecto a y."""
+    # Generamos etiquetas y perturbamos aleatoriamente un 10%
+    y = np.array([f(x[1], x[2]) for x in X])
+    idxs = np.random.choice(n, int(0.1 * n), replace = False)
+    y[idxs] = -1 * y[idxs]
 
-    return (4 * (y + 2)
-        + 4 * np.pi * np.sin(2 * np.pi * x) * np.cos(2 * np.pi * y))
+    return X, y
 
-def df(x, y):
-    """Gradiente de la función f(x, y)."""
+def experiment(is_linear, show = False):
+    """Realización del experimento descrito en los apartados a), b) y c) del
+       ejercicio 2. Devuelve los errores E_in y E_out.
+         - is_linear: controla si las características son lineales o no lineales.
+         - show: controla si se muestran por pantalla los resultados."""
 
-    return np.array([dfx(x, y), dfy(x, y)])
+    X, y = generate_features(1000, is_linear)
 
-def contour_plot(f, w = None):
-    """Pinta el diagrama de contorno para la función 'f = f(x, y)',
-       posiblemente junto a un punto destacado."""
+    if show:
+        print("  Generados 1000 puntos de entrenamiento.")
+        scatter_plot(X, ["x1", "x2"])
+        print("  Generadas etiquetas con ruido.")
+        scatter_plot(X, ["x1", "x2"], y)
 
-    # Establecemos el rango del plot
-    x = np.arange(-2, 2, 0.01)
-    y = np.arange(-2, 2, 0.01)
+    # Ajustamos un modelo de regresión lineal mediante SGD
+    w = sgd(X, y, 0.05, 32, 100)
 
-    # Pintamos el diagrama y el punto del mínimo
-    fig = plt.figure()
-    xx, yy = np.meshgrid(x, y, sparse = True)
-    z = f(xx, yy)
-    cont = plt.contourf(x, y, z)
-    fig.colorbar(cont)
-    if w is not None:
-        plt.plot(*w, 'r*', markersize = 5)
+    # Generamos datos de test
+    X_test, y_test = generate_features(1000, is_linear)
 
-    # Información del plot
-    plt.title('Diagrama de contorno para la función f(x, y)')
-    plt.xlabel('x')
-    plt.ylabel('y')
+    # Calculamos los errores
+    ein = err(w, X, y)
+    eout = err(w, X_test, y_test)
 
-    plt.show(block = False)
-    wait()
+    # Mostramos los resultados
+    if show:
+        model = ("SGD con características "
+                 + "no lineales" if not is_linear else "lineales.")
+        print("  Errores en el experimento uniforme:")
+        print("    E_in:", ein)
+        print("    E_out:", eout)
+        scatter_plot(X, ["x1", "x2"], y, [w], [model])
 
-def ap3A():
-    """Ejecución del apartado a) del ejercicio 3."""
+    return [ein, eout]
 
-    # Fijamos los parámetros de las ejecuciones
-    w = np.array([1.0, -1.0])
-    max_it = 50
+def ex2():
+    """Estudio de la bondad del ajuste lineal frente al aumento
+       de complejidad del modelo."""
 
-    # Nombres de los ejes para la gráfica
-    plt.xlabel("Iteraciones")
-    plt.ylabel("Valor de f(w)")
+    # Número de ejecuciones del experimento
+    N = 1000
 
-    for lr in [0.01, 0.1]:
-        # Ejecutamos el algoritmo de gradiente descendente
-        wmin, _, evol = gd(f, df, w, lr, max_it)
+    """# Ejecutamos el experimento lineal una vez mostrando gráficas y resultados
+    experiment(is_linear = True, show = True)
 
-        # Imprimimos los resultados
-        print(f"    Punto inicial: ({w[0]}, {w[1]})")
-        print("    Tasa de aprendizaje:", lr)
-        print("    Número de iteraciones:", max_it)
-        print(f"    Mínimo: ({wmin[0]}, {wmin[1]})")
-        print("    Valor del mínimo:", f(*wmin), "\n")
+    # Realizamos el experimento lineal 1000 veces
+    errors_l = np.array([0.0, 0.0])
+    for _ in range(N):
+        errors_l += experiment(is_linear = True)
+    errors_l /= N
 
-        # Mostramos la gráfica con la evolución del valor de la función
-        plt.plot(range(max_it + 1), [f(*w) for w in evol],
-            label = r"$\eta$ = " + str(lr))
+    print("  Errores medios en 1000 experimentos con características lineales:")
+    print("    E_in:", errors_l[0])
+    print("    E_out:", errors_l[1])"""
 
-    plt.legend()
-    plt.show(block = False)
-    wait()
+    # Ejecutamos el experimento no lineal una vez mostrando gráficas y resultados
+    experiment(is_linear = False, show = True)
 
-def ap3B():
-    """Ejecución del apartado b) del ejercicio 3."""
+    # Realizamos el experimento no lineal 1000 veces
+    errors_nl = np.array([0.0, 0.0])
+    for _ in range(N):
+        errors_nl += experiment(is_linear= False)
+    errors_nl /= N
 
-    # Fijamos los parámetros de las ejecuciones
-    max_it = 50
-    lr = 0.01
-    w_lst = [np.array([2.1, -2.1]),
-             np.array([3.0, -3.0]),
-             np.array([1.5, 1.5]),
-             np.array([1.0, -1.0])]
-
-    print("    Tasa de aprendizaje:", lr)
-    print("    Número de iteraciones:", max_it)
-    print("\n    {:^12}  {:^25}  {:^17}".format("Inicial", "Mínimo", "Valor"))
-
-    for w in w_lst:
-        # Ejecutamos el algoritmo de gradiente descendente
-        wmin, _, _ = gd(f, df, w, lr, max_it)
-
-        # Imprimimos los resultados
-        print("    {}    {}      {: 1.5f}".format(w, wmin, f(*wmin)))
-
-def ex3():
-    """Ejecución de los distintos apartados del ejercicio 3."""
-
-    print("  --- Apartado a)")
-    ap3A()
-    print("  --- Apartado b)")
-    ap3B()
+    print("  Errores medios en 1000 experimentos con características no lineales:")
+    print("    E_in:", errors_nl[0])
+    print("    E_out:", errors_nl[1])
 
 #
 # FUNCIÓN PRINCIPAL
 #
 
 def main():
-    print("-------- EJERCICIO SOBRE BÚSQUEDA ITERATIVA DE ÓPTIMOS --------")
-    print("--- EJERCICIO 2 ---")
+    """Función principal. Ejecuta el ejercicio paso a paso."""
+
+    # Semilla aleatoria para reproducibilidad
+    np.random.seed(SEED)
+
+    # Número de decimales fijo para salida de vectores
+    np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
+
+    print("-------- EJERCICIO SOBRE REGRESIÓN LINEAL --------")
+    print("--- EJERCICIO 1 ---")
+    #ex1()
+    print("\n--- EJERCICIO 2 ---")
     ex2()
-    print("\n--- EJERCICIO 3 ---")
-    ex3()
 
 if __name__ == "__main__":
     main()
