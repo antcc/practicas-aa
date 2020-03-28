@@ -83,11 +83,11 @@ $(3, -3)$        $(2.73094, -2.71328)$    -0.38125
 $(1.5, 1.5)$     $(1.77792, 1.03206)$     18.04208
 $(1, -1)$        $(1.26906, -1.28672)$    -0.38125
 
-Vemos que dependiendo del punto inicial elegido, el valor del mínimo encontrado cambia bastante. Destacamos el caso del punto $(1.5, 1.5)$, en el que el valor del mínimo está muy lejos de ser óptimo. Esta función tiene la particularidad de que en un entorno de los puntos iniciales elegidos tiene muchos mínimos locales, como podemos apreciar en la siguiente representación (hecha con la función `surface_plot`).
+Vemos que dependiendo del punto inicial elegido el valor del mínimo encontrado cambia bastante, siendo el más bajo el asociado al punto inicial $(2.1, -2.1)$. Destacamos el caso del punto $(1.5, 1.5)$, en el que el valor del mínimo está muy lejos de ser óptimo. Esta función tiene la particularidad de que en un entorno de los puntos iniciales elegidos tiene muchos mínimos locales, como podemos apreciar en la siguiente representación (hecha con la función `surface_plot`).
 
 ![Representación 3D de la función $f(x, y)$.](img/f_surface.jpg){width=450px}
 
-Está claro entonces que dependiendo del punto de partida, el vector evolucionará hasta el mínimo local más cercano, que puede no ser óptimo. Podemos comprobar para un caso particular que el punto encontrado es efectivamente un mínimo local, observando el diagrama de contorno de $f$ y el mínimo encontrado destacado en rojo (realizado con la función  `contour_plot`). Hemos elegido como punto inicial el $(1, -1)$.
+Está claro entonces que dependiendo del punto de partida, el vector evolucionará hasta el mínimo local más cercano, que puede no ser global. Podemos comprobar para un caso particular que el punto encontrado es efectivamente un mínimo local, observando el diagrama de contorno de $f$ y el mínimo encontrado destacado en rojo (realizado con la función  `contour_plot`). Hemos elegido como punto inicial el $(1, -1)$.
 
 ![Diagrama de contorno de la función $f(x, y)$ con un punto mínimo destacado.](img/f_contour.jpg){width=430px}
 
@@ -116,11 +116,11 @@ Disponemos de una función `read_data` para leer los datos de fichero. Una vez l
 
 El algoritmo de gradiente descendente estocástico (*SGD, stochastic gradient descent*) es muy similar al de gradiente descendente del ejercicio anterior. La diferencia es que al actualizar el vector de pesos considera en cada iteración únicamente un subconjunto de los datos, elegido aleatoriamente del total. Cuando se han elegido todos los datos posibles, se baraja el conjunto y se vuelve a dividir en trozos o *batches*. La implementación completa se puede ver en la función `sgd`.
 
-Ejecutamos el algoritmo con un *batch size* de 32, una tasa de aprendizaje de $0.1$ y 100 iteraciones. Obtenemos un vector de pesos $w_{\text{sgd}} = (-1.23108, -0.16363, -0.43121)^T$.
+Ejecutamos el algoritmo con un *batch size* de 64, una tasa de aprendizaje de $0.1$ y 100 iteraciones. Obtenemos un vector de pesos $w_{\text{sgd}} = (-1.24530, -0.17810, -0.43646)^T$.
 
 ```python
 # Ejecutamos el algoritmo SGD
-w_sgd = sgd(X_train, y_train, 0.1, 32, 100)
+w_sgd = sgd(X_train, y_train, 0.1, 64, 100)
 ```
 
 ### Método de la pseudoinversa
@@ -155,7 +155,7 @@ Para el error $E_{out}$ aplicamos la misma fórmula, pero con los datos de test 
 
 Método         $E_{in}$   $E_{out}$
 -------------- ---------- --------------------
-SGD            0.08660    0.133118
+SGD            0.08612    0.13304
 Pseudoinversa  0.07918    0.13095
 
 Vemos cómo los errores son similares en ambos casos, siendo el de la pseudoinversa ligeramente menor. Respecto a la diferencia entre $E_{in}$ y $E_{out}$ dentro de cada método, es normal que el segundo sea mayor, pues al generalizar a puntos que no conocemos cometemos un cierto error. De hecho, sabemos que para el caso lineal la relación entre ambos es
@@ -173,22 +173,22 @@ En primer lugar, generamos 1000 puntos de entrenamiento de manera uniforme en el
 
 ### Vector de características lineales
 
-Consideramos el vector de características $(1, x_1, x_2)^T$, y ajustamos mediante SGD un modelo de regresión lineal a los datos, utilizando una tasa de aprendizaje de $0.1$ y un tamaño de *batch* de $32$. Generamos además otro lote de 1000 puntos que sirvan como datos de test para aproximar el error de generalización $E_{out}$. La función `experiment` resume este proceso, teniendo el cuenta que el argumento `is_linear = True` le dice que el vector de características a usar es el que hemos mencionado.
+Consideramos el vector de características $(1, x_1, x_2)^T$, y ajustamos mediante SGD un modelo de regresión lineal a los datos, utilizando una tasa de aprendizaje de $0.1$ y un tamaño de *batch* de $64$. Generamos además otro lote de 1000 puntos que sirvan como datos de test para aproximar el error de generalización $E_{out}$. La función `experiment` resume este proceso, teniendo el cuenta que el argumento `is_linear = True` le dice que el vector de características a usar es el que hemos mencionado.
 
 ```python
 # Generamos datos de entrenamiento y de test
 X, y = generate_features(1000, is_linear = True)
 X_test, y_test = generate_features(1000, is_linear = True)
 # Ajustamos un modelo de regresión lineal mediante SGD
-w = sgd(X, y, lr, 32, 100)
+w = sgd(X, y, lr, 64, 100)
 # Calculamos los errores
 ein = err(w, X, y)
 eout = err(w, X_test, y_test)
 ```
 
-Para este modelo obtenemos un vector de pesos $w=(-0.03330, -0.30984, 0.07000)^T$ y unos errores $E_{in} = 0.95084$ y
-$E_{out} = 0.95751$, que son bastante altos. Esto no es de extrañar, pues observando el mapa de etiquetas salta a la vista que ninguna recta podrá separar los datos por clases. Si repetimos 1000 veces este experimento y hacemos la media de los errores obtenemos algo bastante parecido:
-$$E_{in} = 0.93041, \quad E_{out} = 0.93523.$$
+Para este modelo obtenemos un vector de pesos $w=(0.07916, -0.47272, 0.07906)^T$ y unos errores $E_{in} = 0.92211$ y
+$E_{out} = 0.94471$, que son bastante altos. Esto no es de extrañar, pues observando el mapa de etiquetas salta a la vista que ninguna recta podrá separar los datos por clases. Si repetimos 1000 veces este experimento y hacemos la media de los errores obtenemos algo bastante parecido:
+$$E_{in} = 0.92872, \quad E_{out} = 0.93474.$$
 
 Vemos como ya esperábamos que ambos errores son similares. La conclusión es que con el vector de características empleado no conseguimos ajustar un modelo que separe las clases.
 
@@ -200,10 +200,10 @@ Repetimos todo el experimento anterior, pero considerando ahora como vector de c
 
 ![Ajuste realizado con SGD en el experimento con características no lineales.](img/sgd_nolin.jpg){width=450px}
 
-En una ejecución concreta de este experimento modificado (con el parámetro `is_linear = False` y un valor $\eta = 0.3$ para SGD), obtenemos un vector de pesos dado por $w=(-0.56168, -0.45363, 0.11701, 0.08154, 0.92234, 1.26294)^T$ y unos errores $E_{in} = 0.61701$ y $E_{out} = 0.63903$. Repitiendo 1000 veces el experimento con este nuevo vector de características, obtenemos unos errores medios de:
-$$E_{in} = 0.61488, \quad E_{out} = 0.61975.$$
+En una ejecución concreta de este experimento modificado (con el parámetro `is_linear = False` y un valor $\eta = 0.3$ para SGD) obtenemos un vector de pesos dado por $w=(-0.89976, -0.30522, 0.04253, -0.02479, 1.33166, 1.51043)^T$ y unos errores $E_{in} = 0.58377$ y $E_{out} = 0.62346$. Repitiendo 1000 veces el experimento con este nuevo vector de características, obtenemos unos errores medios de:
+$$E_{in} = 0.58687, \quad E_{out} = 0.59316.$$
 
-Si miramos la representación de la curva ajustada vemos que, salvo por los puntos de ruido, consigue separar más o menos bien las dos clases. Esto se refleja en que los errores son más bajos, si bien no consigue bajar mucho debido como ya hemos dicho al ruido existente en las etiquetas.
+Si miramos la representación de la curva ajustada vemos que, salvo por los puntos de ruido, consigue separar más o menos bien las dos clases. Esto se refleja en que los errores son más bajos que en el modelo anterior, si bien no consigue bajar todo lo que desearíamos debido como ya hemos dicho al ruido existente en las etiquetas.
 
 Una vez realizados estos dos experimentos, podemos concluir que al aumentar la complejidad del modelo y permitir más grados de libertad en el ajuste **podemos reducir los errores** tanto *in-sample* como *out-sample*. Al introducir términos cuadráticos en el vector de características $(1, x_1, x_2, x_1x_2, x_1^2, x_2^2)^T$ estamos permitiendo que el ajuste se asimile a la función real utilizada para etiquetar, haciendo así que los errores disminuyan (a costa de aumentar la dimensión del vector de pesos). Es por esto que este último modelo es más adecuado para ajustar nuestros datos.
 
@@ -244,16 +244,16 @@ for lr in [0.1, 1]:
         wmin, evol = newton(f, df, hf, w, lr, max_it)
 ```
 
-Obtenemos las siguientes tablas de resultados.
+Obtenemos las siguientes tablas de resultados:
 
-$\eta$  Punto inicial  Punto mínimo             Valor del mínimo
+$\eta$  Punto inicial  Punto final              Valor de $f$
 ------- -------------- ------------------------ --------------------
 0.1     $(2.1, -2.1)$    $(2.00034, -2.00035)$    -0.00001
 0.1     $(3, -3)$        $(3.05367, -3.02829)$    3.10798
 0.1     $(1.5, 1.5)$     $(1.42530, 1.36855)$     23.68963
 0.1     $(1, -1)$        $(0.94632, -0.97170)$    3.10798
 
-$\eta$  Punto inicial  Punto mínimo             Valor del mínimo
+$\eta$  Punto inicial  Punto final              Valor de $f$
 ------- -------------- ------------------------ --------------------
 1       $(2.1, -2.1)$    $(1.75619, -1.76207)$    -1.82008
 1       $(3, -3)$        $(3.05397, -3.02846)$    3.10798
@@ -270,6 +270,14 @@ En este caso vemos como, de hecho, aumenta el valor de la función con respecto 
 
 ![Evolución del método de Newton con $\eta=1$.](img/evol_newton1.jpg){width=450px}
 
-Al aumentar la tasa de aprendizaje, para el punto $(2.1, -2.1)$ ya sí conseguimos encontrar un mínimo local. En general observamos también que la convergencia es bastante rápida, algo que es una de las bondades de este método. Además, no se producen muchas oscilaciones aun teniendo una tasa de aprendizaje elevada.
+Al aumentar la tasa de aprendizaje, para el punto $(2.1, -2.1)$ ya sí conseguimos encontrar un mínimo local. En general observamos también que la convergencia es bastante rápida, cosa que es una de las bondades de este método. Además, no se producen muchas oscilaciones aun teniendo una tasa de aprendizaje alta. De hecho, parece que el algoritmo funciona mejor con una tasa de aprendizaje más bien elevada en la mayoría de los casos.
 
-Como conclusión, este método parece tener un peor desempeño que el de gradiente descendente. No solo tiene unas condiciones más restrictivas para su aplicación (la función debe ser dos veces derivable), sino que también tiene un mayor coste computacional (hay que calcular una inversa) y puede caer fácilmente en máximos locales o puntos de silla.
+Podemos comparar del mismo modo la evolución del valor de la función con este método y con el de gradiente descendente, por ejemplo para el punto $(1.5, 1.5)$. En este caso hemos utilizado $\eta = 0.01$ en el caso de gradiente descendente y $\eta = 0.1$ en el método de Newton.
+
+![Evolución del valor de $f(x, y)$ en los métodos de Newton ($\eta = 0.1$) y gradiente descendente ($\eta = 0.01$) para el punto $(1.5, 1.5)$.](img/newton_comp.jpg){width=450px}
+
+Como ya adivinábamos, el desempeño en el caso de gradiente descendente es mucho mejor. Mostramos por último un gráfico comparativo de todos los puntos, para el mismo valor de $\eta = 0.01$, en el que se sigue apreciando la tendencia anunciada de que el método de Newton funciona peor.
+
+![Evolución del valor de $f(x, y)$ en los métodos de Newton y gradiente descendente para el punto $(1.5, 1.5)$.](img/newton001.jpg){width=450px}
+
+Como conclusión, este método parece tener un peor desempeño que el de gradiente descendente para esta función. No solo tiene unas condiciones más restrictivas para su aplicación (la función debe ser dos veces derivable), sino que también tiene un mayor coste computacional (hay que calcular una inversa) y puede caer fácilmente en máximos locales o puntos de silla. Es posible que para otras funciones con menos puntos críticos se comporte mejor.

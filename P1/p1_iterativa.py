@@ -51,6 +51,7 @@ def gd(f, df, w, lr, max_it, eps = -np.inf):
     evol = [w_]
 
     while it < max_it and f(*w_) > eps:
+        # Avanzamos en la dirección del gradiente y sentido opuesto
         w_ = w_ - lr * df(*w_)
         evol += [w_]
         it += 1

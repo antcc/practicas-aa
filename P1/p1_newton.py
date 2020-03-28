@@ -77,10 +77,9 @@ def hf(x, y):
     return np.array([[hfxx(x, y), hfxy(x, y)],
         [hfxy(x, y), hfyy(x, y)]])
 
-def newton(f, df, hf, w, lr, max_it):
+def newton(df, hf, w, lr, max_it):
     """Implementación del método de Newton para optimización.
-         - f = f(x, y): función real-valuada a optimizar.
-         - df = df(x, y): gradiente de f.
+         - df = df(x, y): gradiente de la función f(x,y) a optimizar.
          - hf = hf(x, y): matriz hessiana de f.
          - w = (u, v): punto inicial.
          - lr: valor del learning rate.
@@ -119,7 +118,7 @@ def bonus():
 
         for w in w_lst:
             # Ejecutamos el algoritmo
-            wmin, evol = newton(f, df, hf, w, lr, max_it)
+            wmin, evol = newton(df, hf, w, lr, max_it)
 
             # Mostramos los resultados
             print(f"\n  Punto inicial: ({w[0]}, {w[1]})")

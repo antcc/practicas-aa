@@ -144,6 +144,7 @@ def sgd(X, y, lr, batch_size, max_it):
          - batch_size: tamaño del minibatch."""
 
     it = 0
+    start = 0  # Contador de batch
     n = len(X)
     dims = len(X[0])
     idxs = np.arange(n)  # Vector de índices
@@ -151,16 +152,21 @@ def sgd(X, y, lr, batch_size, max_it):
 
     while it < max_it:
         # Barajamos los datos en cada pasada completa
-        if it == 0 or it * batch_size > n:
+        if start == 0:
             np.random.shuffle(idxs)
 
         # Procesamos cada minibatch de forma secuencial
-        idx = idxs[it * batch_size:(it + 1) * batch_size]
+        idx = idxs[start:start + batch_size]
 
         # Actualizamos el vector de pesos
         w = (w - lr * (2 / batch_size)
             * (X[idx].T.dot(X[idx].dot(w) - y[idx])))
+
+        # Actualizamos contadores
         it += 1
+        start = start + batch_size
+        if start > n:
+            start = 0
 
     return w
 
@@ -173,6 +179,7 @@ def pseudoinverse(X, y):
 
     dims = len(X[0])
 
+    # Realizamos la descomposición SVD y calculamos la solución
     u, s, vt = np.linalg.svd(X)
     d = np.diag([1 / l if l > EPS else 0.0 for l in s])
     return (vt.T @ d @ u.T[0:dims]) @ y
@@ -180,7 +187,7 @@ def pseudoinverse(X, y):
 def err(w, X, y):
     """Expresión del error cometido por un modelo de regresión lineal.
          - w: vector de pesos.
-         - X: vector de características de la forma [1, x_1, x_2]-
+         - X: vector de características con primera componente 1.
          - y: vector de etiquetas."""
 
     return 1 / len(X) * ((X.dot(w) - y) ** 2).sum()
@@ -194,7 +201,7 @@ def ex1():
     X_test, y_test = read_data(PATH + "X_test.npy", PATH + "y_test.npy")
 
     # Estimamos un modelo SGD y otro con pseudoinversa
-    w_sgd = sgd(X_train, y_train, 0.1, 32, 100)
+    w_sgd = sgd(X_train, y_train, 0.1, 64, 100)
     w_pseudo = pseudoinverse(X_train, y_train)
 
     # Mostramos los resultados
@@ -269,7 +276,7 @@ def experiment(is_linear, lr, show = False):
         scatter_plot(X, ["x1", "x2"], y)
 
     # Ajustamos un modelo de regresión lineal mediante SGD
-    w = sgd(X, y, lr, 32, 100)
+    w = sgd(X, y, lr, 64, 100)
 
     # Generamos datos de test
     X_test, y_test = generate_features(1000, is_linear)
