@@ -101,22 +101,24 @@ def ex2():
     print("  Tolerancia:", eps)
     print("  Número de iteraciones:", it)
     print(f"  Mínimo: ({wmin[0]}, {wmin[1]})")
-    print("  Valor del mínimo:", E(*wmin))
+    print("  Valor del mínimo:", E(*wmin), "\n")
 
 #
 # EJERCICIO 3: MINIMIZACIÓN DE LA FUNCIÓN f(x, y)
 #
 
-def surface_plot(f, fname, ws = []):
+def surface_plot(f, fname, xmin, xmax, ymin, ymax, ws = []):
     """Muestra una figura 3D de la superficie dada por z = f(x, y),
        eventualmente junto con una serie de puntos destacados.
          - f: función a considerar.
          - fname: nombre de la función.
+         - xmin, xmax: límites del plot en el eje X.
+         - ymin, ymax: límites del plot en el eje Y.
          - ws: lista de puntos (2D) destacados."""
 
     # Establecemos el rango y las variables del plot
-    x = np.linspace(0, 4, 50)
-    y = np.linspace(-4, 0, 50)
+    x = np.linspace(xmin, xmax, 50)
+    y = np.linspace(ymin, ymax, 50)
     X, Y = np.meshgrid(x, y)
     Z = f(X, Y)
 
@@ -126,9 +128,7 @@ def surface_plot(f, fname, ws = []):
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel(fname + "(x, y)")
-    ax.plot_surface(
-        X, Y, Z,
-        alpha = 0.5)
+    ax.plot_surface(X, Y, Z, alpha = 0.5)
 
     # Dibujamos los puntos destacados
     for w in ws:
@@ -138,9 +138,10 @@ def surface_plot(f, fname, ws = []):
     plt.show(block = True)
     wait()
 
-def contour_plot(f, w = None):
+def contour_plot(f, xmin, xmax, ymin, ymax, w = None):
     """Pinta el diagrama de contorno para la función 'f = f(x, y)',
-       posiblemente junto a un punto destacado 'w'."""
+       posiblemente junto a un punto destacado 'w', en el
+       entorno [xmin, xmax] x [ymin, ymax]."""
 
     # Establecemos el rango del plot
     x = np.arange(-2, 2, 0.01)
@@ -222,9 +223,9 @@ def ap3B():
     max_it = 50
     lr = 0.01
     w_lst = [np.array([2.1, -2.1]),
-             np.array([3.0, -3.0]),
-             np.array([1.5, 1.5]),
-             np.array([1.0, -1.0])]
+        np.array([3.0, -3.0]),
+        np.array([1.5, 1.5]),
+        np.array([1.0, -1.0])]
 
     print("    Tasa de aprendizaje:", lr)
     print("    Número de iteraciones:", max_it)
@@ -258,6 +259,7 @@ def main():
     print("-------- EJERCICIO SOBRE BÚSQUEDA ITERATIVA DE ÓPTIMOS --------")
     print("--- EJERCICIO 2 ---")
     ex2()
+    wait()
     print("\n--- EJERCICIO 3 ---")
     ex3()
 

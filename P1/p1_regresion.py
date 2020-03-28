@@ -41,7 +41,8 @@ def wait():
 
 def read_data(file_X, file_y):
     """Leer archivos de características y clases en un par de
-       vectores El formato de salida de las características es [1, x_1, x_2].
+       vectores El formato de salida de las características es
+       [1, x_1, x_2].
          - file_X: archivo con las características bidimensionales.
          - file_y: archivo con las clases."""
 
@@ -81,40 +82,48 @@ def scatter_plot(X, axis, y = None, ws = None, ws_labels = None, is_linear = Tru
     plt.figure(figsize = (8, 6))
     xmin, xmax = np.min(X[:, 1]), np.max(X[:, 1])
     ymin, ymax = np.min(X[:, 2]), np.max(X[:, 2])
-    plt.xlim(xmin, xmax)
-    plt.ylim(ymin, ymax)
+    plt.xlim(xmin - 0.1, xmax + 0.1)
+    plt.ylim(ymin - 0.1, ymax + 0.1)
 
+    # Asignamos vector de etiquetas
     if y is None:
         c = [1 for _ in range(len(X))]
     else:
         c = y
 
     # Mostramos scatter plot con leyenda
-    scatter = plt.scatter(
-        X[:, 1], X[:, 2], c = c, cmap = ListedColormap(['r', 'lime']),
-        edgecolors = 'k')
+    scatter = plt.scatter(X[:, 1], X[:, 2], c = c,
+        cmap = ListedColormap(['r', 'lime']), edgecolors = 'k')
     if y is not None:
         legend1 = plt.legend(
-            *scatter.legend_elements(), title = "Clases",
-            loc = "upper left")
+            *scatter.legend_elements(),
+            title = "Clases",
+            loc = "upper right")
+
     plt.xlabel(axis[0])
     plt.ylabel(axis[1])
 
     # Mostramos modelos ajustados
     if ws is not None:
-        if is_linear:
+        if is_linear:  # Pintamos una recta
             x = np.array([xmin, xmax])
             for w, l in zip(ws, ws_labels):
                 plt.plot(x, (-w[0] - w[1] * x) / w[2], label = l, linewidth = 2)
-        else:
-            xx, yy = np.meshgrid(np.linspace(xmin, xmax, 100), np.linspace(ymin, ymax, 100))
+        else:  # Pintamos una cónica
+            xx, yy = np.meshgrid(np.linspace(xmin - 0.1, xmax + 0.2, 100),
+                np.linspace(ymin - 0.1, ymax + 0.1, 100))
+
+            # Función que encapsula el producto escalar <w^T, X>
             h = lambda x, y, w: np.array([1, x, y, x * y, x * x, y * y]).dot(w)
+
+            # Pintamos la curva de nivel 0 en el plano
             for w, l in zip(ws, ws_labels):
                 z = h(xx, yy, w)
                 plt.contour(xx, yy, z, levels = [0]).collections[0].set_label(l)
 
         plt.legend(loc = "lower right")
 
+    # Añadimos leyenda
     if y is not None:
         plt.gca().add_artist(legend1)
 
@@ -138,7 +147,7 @@ def sgd(X, y, lr, batch_size, max_it):
     n = len(X)
     dims = len(X[0])
     idxs = np.arange(n)  # Vector de índices
-    w = np.zeros((dims,))  # Punto inicial
+    w = np.zeros((dims,))  # Punto inicial w = 0
 
     while it < max_it:
         # Barajamos los datos en cada pasada completa
@@ -149,7 +158,8 @@ def sgd(X, y, lr, batch_size, max_it):
         idx = idxs[it * batch_size:(it + 1) * batch_size]
 
         # Actualizamos el vector de pesos
-        w = w - lr * (2 / batch_size) * (X[idx].T.dot(X[idx].dot(w) - y[idx]))
+        w = (w - lr * (2 / batch_size)
+            * (X[idx].T.dot(X[idx].dot(w) - y[idx])))
         it += 1
 
     return w
@@ -163,9 +173,9 @@ def pseudoinverse(X, y):
 
     dims = len(X[0])
 
-    u, s, v = np.linalg.svd(X)
+    u, s, vt = np.linalg.svd(X)
     d = np.diag([1 / l if l > EPS else 0.0 for l in s])
-    return (v.T @ d @ u.T[0:dims]).dot(y)
+    return (vt.T @ d @ u.T[0:dims]) @ y
 
 def err(w, X, y):
     """Expresión del error cometido por un modelo de regresión lineal.
@@ -190,10 +200,8 @@ def ex1():
     # Mostramos los resultados
     print("  Vector de pesos con SGD:", w_sgd)
     print("  Vector de pesos con pseudoinversa:", w_pseudo)
-    scatter_plot(
-        X_train, ["Intensidad promedio", "Simetría"],
-        y_train, [w_sgd, w_pseudo],
-        ["SGD", "Pseudoinversa"])
+    scatter_plot(X_train, ["Intensidad promedio", "Simetría"],
+        y_train, [w_sgd, w_pseudo], ["SGD", "Pseudoinversa"])
 
     # Mostramos los errores
     print("  Errores con SGD:")
@@ -210,7 +218,7 @@ def ex1():
 
 def uniform_data(n, d, size):
     """Genera 'n' puntos de dimension 'd' uniformente distribuidos en el hipercubo
-       definido por [-size, size]"""
+       definido por [-size, size]."""
 
     return np.random.uniform(-size, size, (n, d))
 
@@ -227,18 +235,20 @@ def generate_features(n, is_linear):
 
     # Generamos una muestra de 'n' puntos en [-1, 1] x [-1, 1]
     X = uniform_data(n, 2, 1)
+
+    # Formamos el vector de características
     X = np.hstack((np.ones((n, 1)), X))
     if not is_linear:
-        X = np.hstack((
-            X,
-            (X[:, 1] * X[:, 2]).reshape(n, 1),
-            (X[:, 1] ** 2).reshape(n, 1),
-            (X[:, 2] ** 2).reshape(n, 1)))
+        X = np.vstack(
+            (X.T,
+            X[:, 1] * X[:, 2],
+            X[:, 1] ** 2,
+            X[:, 2] ** 2)).T
 
     # Generamos etiquetas y perturbamos aleatoriamente un 10%
     y = np.array([f(x[1], x[2]) for x in X])
     idxs = np.random.choice(n, int(0.1 * n), replace = False)
-    y[idxs] = -1 * y[idxs]
+    y[idxs] = -y[idxs]
 
     return X, y
 
@@ -249,6 +259,7 @@ def experiment(is_linear, lr, show = False):
          - lr: learning rate para SGD.
          - show: controla si se muestran por pantalla los resultados."""
 
+    # Generamos datos de entrenamiento
     X, y = generate_features(1000, is_linear)
 
     if show:
@@ -271,11 +282,12 @@ def experiment(is_linear, lr, show = False):
     if show:
         model = ("SGD con características "
                  + ("no lineales" if not is_linear else "lineales."))
-        print("  Errores en el experimento "
-              + ("no lineal:" if not is_linear else "lineal:"))
+        print("  Vector de pesos:", w)
+        print("  Errores en el experimento:")
         print("    E_in:", ein)
         print("    E_out:", eout)
-        scatter_plot(X, ["x1", "x2"], y, [w], [model], is_linear)
+        scatter_plot(X, ["x1", "x2"],
+            y, [w], [model], is_linear)
 
     return [ein, eout]
 
@@ -334,6 +346,7 @@ def main():
     print("-------- EJERCICIO SOBRE REGRESIÓN LINEAL --------")
     print("--- EJERCICIO 1 ---")
     ex1()
+    wait()
     print("\n--- EJERCICIO 2 ---")
     ex2()
 
