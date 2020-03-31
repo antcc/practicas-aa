@@ -110,7 +110,7 @@ $$\mathcal{H} = \{ h:\mathbb{R}^{d+1} \to \mathbb{R} \ | \ h(x) = w^Tx, \ w \in 
 
 En este caso vamos a ajustar modelos de regresión lineal a vectores de características extraídos de dígitos manuscritos. En particular se extraen dos características: la intensidad media y la simetría respecto al eje vertical. Para simplificar el problema, consideramos únicamente las imágenes correspondientes a los dígitos $1$ y $5$.
 
-Disponemos de una función `read_data` para leer los datos de fichero. Una vez los tenemos, organizamos el dato $i$-ésimo en un vector de características $x_i = (1, x_{n1}, x_{n2})^T$, que ya tiene el término de *bias* añadido, y consideramos la matriz $X = (x_n^T)_{n=1}^N$. Tenemos también un vector $y$ de etiquetas de longitud $N$, que son $-1$ o $1$ según si el ejemplo pertenece al dígito $1$ ó $5$.
+Disponemos de una función `read_data` para leer los datos de fichero. Una vez los tenemos, organizamos el dato $i$-ésimo en un vector de características $x_i = (1, x_{n1}, x_{n2})^T$, que ya tiene el término de *bias* añadido, y consideramos la matriz $X = (x_n^T)_{n=1}^N$. Tenemos también un vector $y$ de etiquetas de longitud $N$, que son $-1$ ó $1$ según si el ejemplo pertenece al dígito $1$ ó $5$.
 
 ### Gradiente descendente estocástico
 
