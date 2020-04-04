@@ -19,3 +19,6 @@ header-includes:
 # Ejercicio sobre la complejidad de $\mathcal{H}$ y el ruido
 
 - Se considera que los puntos estén sobre la recta pertenecen a la clase del 1.
+
+- La función scatter_plot acepta los pesos de un clasificador general. Para mostrar una
+recta, ponemos los tres últimos pesos a 0.
