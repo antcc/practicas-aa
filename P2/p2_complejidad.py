@@ -70,15 +70,14 @@ def scatter_plot(X, axis, y = None, ws = None,
         c = y
 
     # Mostramos scatter plot con leyenda
-    scatter = plt.scatter(X[:, 0], X[:, 1], c = c,
-        cmap = ListedColormap(['r', 'limegreen']), edgecolors = 'k')
+    scatter = plt.scatter(X[:, 0], X[:, 1], c = c, edgecolors = 'k')
     if y is not None:
         legend1 = plt.legend(
             *scatter.legend_elements(),
             title = "Clases",
             loc = "upper right")
 
-    # Pintamos los clasificadores con subplots
+    # Pintamos los clasificadores
     if ws is not None:
         xx, yy = np.meshgrid(np.linspace(xmin - scale_x, xmax + scale_x, 100),
             np.linspace(ymin - scale_y, ymax + scale_y, 100))
@@ -91,9 +90,9 @@ def scatter_plot(X, axis, y = None, ws = None,
         for w, l, c in zip(ws, ws_labels, colors):
             # Pintamos la curva de nivel 0 en el plano de la función z = X * w
             z = h(xx, yy, w)
+            plt.contourf(xx, yy, z, levels = 0,  alpha = 0.2)
             plt.contour(xx, yy, z, levels = [0],
-                linewidths = 2, colors = [c]).collections[0].set_label(l)
-
+                linewidths = 2).collections[0].set_label(l)
         plt.legend(loc = "lower right")
 
     # Añadimos leyenda sobre las clases
@@ -200,7 +199,7 @@ def random_line_classifier(noise = False, show = False):
     # Mostramos el resultado de la clasificación
     if show:
         scatter_plot(X, ["x", "y"], y,
-            [[-b, -a, 1, 0, 0, 0]], ["Recta y = {:0.5f}x + {:0.5f}".format(a, b)],
+            [[-b, -a, 1, 0, 0, 0]], ["Recta y = {:0.5f}x + ({:0.5f})".format(a, b)],
             title = "Clasificación dada por una recta (sin ruido)")
 
     return X, y, a, b
@@ -217,7 +216,7 @@ def ex2():
 
     # Mostramos el resultado de la nueva clasificación
     scatter_plot(X, ["x", "y"], y_noise,
-        [[-b, -a, 1, 0, 0, 0]], ["Recta y = {:0.5f}x + {:0.5f}".format(a, b)],
+        [[-b, -a, 1, 0, 0, 0]], ["Recta y = {:0.5f}x + ({:0.5f})".format(a, b)],
         title = "Clasificación dada por una recta (con ruido)")
 
 #
@@ -271,7 +270,7 @@ def main():
     print("\n--- EJERCICIO 2 ---")
     #ex2()
     print("\n--- EJERCICIO 3 ---")
-    #ex3()
+    ex3()
 
 if __name__ == "__main__":
     main()
