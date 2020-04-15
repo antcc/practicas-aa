@@ -16,12 +16,13 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
+from sklearn.metrics import accuracy_score, balanced_accuracy_score
 
 #
 # PARÁMETROS GLOBALES
 #
 
-SEED = 2020
+SEED = 2020  # Semilla general para el programa
 
 #
 # FUNCIONES AUXILIARES
@@ -34,24 +35,27 @@ def wait():
     input("\n(Pulsa [Enter] para continuar...)\n")
     plt.close()
 
-def scatter_plot(X, axis, y = None, ws = None,
-                 ws_labels = None, title = None, ncols = 2):
+def scatter_plot(X, axis, y = None, fun = None, label = None,
+                 title = None, regions = False):
     """Muestra un scatter plot con leyenda y (opcionalmente) la frontera
-       de varios clasificadores cuadráticos, de la forma
+       de un cuadrático con dos grados de libertad, de la forma
        w0 + w1 * x1 + w2 * x2 + w3 * x1 * x2 + w4 * x1^2 + w5 * x2^2.
          - X: vector de características bidimensional.
          - axis: nombres de los ejes.
          - y: vector de etiquetas o clases.
-         - ws: vectores de pesos de los clasificadores (6-dimensionales).
-         - ws_labels: etiquetas de los vectores de pesos. Debe
-           aparecer obligatoriamente si 'ws' no es vacío.
+         - fun: función que toma dos parámetros tal que f(x, y) = 0 define
+           la frontera del clasificador.
+         - label: etiqueta del clasificador. Debe aparecer obligatoriamente
+           si 'fun' está presente.
          - title: título del plot.
-         - ncols: número de columnas para el subplot."""
+         - regions: controla si se pintan las regiones en las que el clasificador
+           divide al plano."""
 
     # Establecemos tamaño e información del plot
-    plt.figure(figsize = (8, 6))
+    fig = plt.figure(figsize = (8, 6))
     plt.xlabel(axis[0])
     plt.ylabel(axis[1])
+    cmap = ListedColormap(['r', 'lime'])
     if title is not None:
         plt.title(title)
 
@@ -70,29 +74,34 @@ def scatter_plot(X, axis, y = None, ws = None,
         c = y
 
     # Mostramos scatter plot con leyenda
-    scatter = plt.scatter(X[:, 0], X[:, 1], c = c, edgecolors = 'k')
+    scatter = plt.scatter(X[:, 0], X[:, 1],
+        cmap = cmap, c = c, edgecolors = 'k')
     if y is not None:
         legend1 = plt.legend(
             *scatter.legend_elements(),
             title = "Clases",
             loc = "upper right")
 
-    # Pintamos los clasificadores
-    if ws is not None:
+    # Pintamos el clasificadores
+    if fun is not None:
         xx, yy = np.meshgrid(np.linspace(xmin - scale_x, xmax + scale_x, 100),
             np.linspace(ymin - scale_y, ymax + scale_y, 100))
 
-        # Función que encapsula el producto escalar X * w
-        h = lambda x, y, w: np.array([1, x, y, x * y, x * x, y * y]).dot(w)
+        # Función que define el clasificador
+        z = fun(xx, yy)
 
-        # Iteramos sobre los clasificadores (cada uno de un color)
-        colors = plt.cm.rainbow(np.linspace(0, 1, len(ws)))
-        for w, l, c in zip(ws, ws_labels, colors):
-            # Pintamos la curva de nivel 0 en el plano de la función z = X * w
-            z = h(xx, yy, w)
-            plt.contourf(xx, yy, z, levels = 0,  alpha = 0.2)
-            plt.contour(xx, yy, z, levels = [0],
-                linewidths = 2).collections[0].set_label(l)
+        # Pintamos las regiones en las que el clasificador divide al plano
+        if regions:
+            cont = plt.contourf(xx, yy, z,
+                cmap = cmap, levels = 0, alpha = 0.1)
+            fig.colorbar(cont, aspect = 30)
+
+        # Pintamos el clasificador como la curva de nivel 0 en el plano de
+        # la función 'fun'
+        plt.contour(xx, yy, z,
+            levels = [0], colors = ['tab:blue'],
+            linewidths = 2).collections[0].set_label(label)
+
         plt.legend(loc = "lower right")
 
     # Añadimos leyenda sobre las clases
@@ -142,24 +151,29 @@ def ex1():
     X_gauss = gaussian_sample(50, 2, [5, 7])
 
     # Mostramos los resultados
-    print("  --- Apartado a)")
+    print("    --- Apartado a)")
     scatter_plot(X_unif, ["x", "y"],
-        title = "Nube de puntos uniformes")
-    print("  --- Apartado b)")
+        title = "Nube de 50 puntos uniformes")
+    print("    --- Apartado b)")
     scatter_plot(X_gauss, ["x", "y"],
-        title = "Nube de puntos gaussianos")
+        title = "Nube de 50 puntos gaussianos")
 
 #
 # EJERCICIO 2: SEPARACIÓN LINEAL CON RUIDO
 #
 
-def f(a, b, x, y):
-    """Función utilizada para asignar etiquetas binarias a
-       los puntos. Mide el signo de la distancia del punto
-       (x, y) a la recta y = ax + b. Se considera que los
-       puntos estén sobre la recta pertenecen a la clase del 1."""
+def sign(x):
+    """Devuelve el signo de x, considerando que el signo de 0 es 1."""
 
-    return 1 if y - a * x - b >= 0 else -1
+    return 1 if x >= 0 else -1
+
+def f(a, b, x, y):
+    """Función utilizada para asignar etiquetas binarias a los puntos.
+       Mide el signo de la distancia del punto (x, y) a la recta de pendiente
+       'a' y término independiente 'b'. Se considera que los puntos estén
+       sobre la recta pertenecen a la clase del 1."""
+
+    return sign(y - a * x - b)
 
 def simulate_noise(y, p):
     """Introduce ruido en el vector de etiquetas 'y', cambiando una
@@ -170,7 +184,7 @@ def simulate_noise(y, p):
         # Seleccionamos los índices de las clases positivas (resp. negativas)
         idxs = np.where(y == label)[0]
 
-        # Elegimos aleatoriamente un 10% de ellos
+        # Elegimos aleatoriamente una fracción 'p' de ellos
         random_idxs = np.random.choice(idxs, int(p * len(idxs)), replace = False)
 
         # Cambiamos el signo de los elegidos
@@ -178,78 +192,63 @@ def simulate_noise(y, p):
 
     return y_noise
 
-def random_line_classifier(noise = False, show = False):
-    """Genera una nube de puntos de forma uniforme y una recta
-       a partir de la cual clasificarlos, con eventual ruido.
-       Devuelve los puntos, la recta y las etiquetas generadas.
-         - noise: controla si se introduce ruido en las etiquetas.
-         - show: controla si se muestran gráficas."""
+def ex2():
+    """Dibuja puntos de forma uniforme, etiquetados según el signo de su
+       distancia a una recta también elegida uniformemente, con y sin ruido.
+       Posteriormente compara la clasificación realizada por la recta y por
+       distintos clasificadores cuadráticos."""
 
     # Generamos 100 puntos y una recta en [-50, 50] x [-50, 50]
     X = uniform_sample(100, 2, -50, 50)
     a, b = line_sample(-50, 50)
+    v = lambda x, y: y - a * x - b
 
     # Etiquetamos los puntos según el signo de la distancia a la recta
     y = np.array([f(a, b, x[0], x[1]) for x in X])
 
-    # Introducimos ruido en las etiquetas
-    if noise:
-        y = simulate_noise(y, 0.1)
-
     # Mostramos el resultado de la clasificación
-    if show:
-        scatter_plot(X, ["x", "y"], y,
-            [[-b, -a, 1, 0, 0, 0]], ["Recta y = {:0.5f}x + ({:0.5f})".format(a, b)],
-            title = "Clasificación dada por una recta (sin ruido)")
-
-    return X, y, a, b
-
-def ex2():
-    """Dibuja puntos etiquetados según el signo de su distancia a
-       una recta, con y sin ruido."""
-
-    # Clasificación sin ruido
-    X, y, a, b = random_line_classifier(noise = False, show = True)
+    scatter_plot(X, ["x", "y"], y,
+        v, "Recta y = {:0.3f}x + ({:0.3f})".format(a, b),
+        title = "Clasificación dada por una recta (sin ruido)")
 
     # Introducimos ruido en las etiquetas
     y_noise = simulate_noise(y, 0.1)
 
     # Mostramos el resultado de la nueva clasificación
     scatter_plot(X, ["x", "y"], y_noise,
-        [[-b, -a, 1, 0, 0, 0]], ["Recta y = {:0.5f}x + ({:0.5f})".format(a, b)],
+        v, "Recta y = {:0.3f}x + ({:0.3f})".format(a, b),
         title = "Clasificación dada por una recta (con ruido)")
-
-#
-# EJERCICIO 3: FRONTERA DE CLASIFICACIÓN PARA CLASIFICADORES CUADRÁTICOS
-#
-
-def ex3():
-    """Dibuja la frontera de clasificación de una serie de
-       clasificadores cuadráticos, junto con una nube de puntos
-       clasificados según la recta del ejercicio anterior."""
-
-    # Repetimos la segunda parte del ejercicio anterior
-    X, y, a, b = random_line_classifier(noise = True)
 
     # Listamos los clasificadores para comparar
     classifiers = [
-        [-b, -a, 1, 0, 0, 0],
-        [100, -20, -40, 0, 1, 1],
-        [50, 10, -40, 0, 0.5, 1],
-        [-750, -10, -40, 0, 0.5, -1],
-        [3, -5, 1, 0, -20, 0]]
+        v,
+        lambda x, y: (x - 10) ** 2 + (y - 20) ** 2 - 400,
+        lambda x, y: 0.5 * (x + 10) ** 2 + (y - 20) ** 2 - 400,
+        lambda x, y: 0.5 * (x - 10) ** 2 - (y + 20) ** 2 - 400,
+        lambda x, y: y - 20 * x ** 2 - 5 * x + 3]
 
     classifiers_names = [
-        "f(x,y = y - {:0.5f}x - {:0.5f}".format(a, b),
-        r"$f(x, y) = (x-10)^2 + (y-20)^2 - 400$",
-        r"$f(x, y) = 0.5(x+10)^2 + (y-20)^2 - 400$",
-        r"$f(x, y) = 0.5(x-10)^2 - (y+20)^2 - 400$",
-        r"$f(x, y) = y - 20x^2 -5x +3$"]
+        ("f(x,y) = y - ({:0.3f})x - ({:0.3f}) = 0".format(a, b), "recta"),
+        (r"$f(x, y) = (x-10)^2 + (y-20)^2 - 400 = 0$", "elipse 1"),
+        (r"$f(x, y) = 0.5(x+10)^2 + (y-20)^2 - 400 = 0$", "elipse 2"),
+        (r"$f(x, y) = 0.5(x-10)^2 - (y+20)^2 - 400 = 0$", "elipse 3"),
+        (r"$f(x, y) = y - 20x^2 - 5x + 3$ = 0", "parábola")]
 
     # Mostramos las gráficas
-    for i, (cl, cl_name) in enumerate(zip(classifiers, classifiers_names)):
-        scatter_plot(X, ["x", "y"], y, [cl], [cl_name],
-            title = "Frontera de clasificación para el clasificador " + str(i + 1))
+    for fun, (label, name) in zip(classifiers, classifiers_names):
+        scatter_plot(X, ["x", "y"], y, fun, label,
+            title = "Frontera de clasificación para la " + name,
+            regions = True)
+
+    # Mostramos las métricas de clasificación
+    for fun, (_, name) in zip(classifiers, classifiers_names):
+        y_pred = [sign(fun(x[0], x[1])) for x in X]
+        acc = accuracy_score(y_noise, y_pred, normalize = True)
+        balanced_acc = balanced_accuracy_score(y_noise, y_pred)
+
+        print("Clasificador: " + name)
+        print("    Accuracy = {:0.3f}%".format(acc * 100))
+        print("    Balanced accuracy = {:0.3f}%\n".format(balanced_acc * 100))
 
 #
 # FUNCIÓN PRINCIPAL
@@ -262,15 +261,13 @@ def main():
     np.random.seed(SEED)
 
     # Número de decimales fijo para salida de vectores
-    np.set_printoptions(formatter = {'float': lambda x: "{:0.5f}".format(x)})
+    np.set_printoptions(formatter = {'float': lambda x: "{:0.3f}".format(x)})
 
-    print("-------- EJERCICIO SOBRE COMPLEJIDAD Y RUIDO --------")
+    print("-------- EJERCICIO SOBRE COMPLEJIDAD Y RUIDO --------\n")
     print("--- EJERCICIO 1 ---")
-    #ex1()
+    ex1()
     print("\n--- EJERCICIO 2 ---")
-    #ex2()
-    print("\n--- EJERCICIO 3 ---")
-    ex3()
+    ex2()
 
 if __name__ == "__main__":
     main()
