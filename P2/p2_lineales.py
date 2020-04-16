@@ -144,15 +144,15 @@ def random_line_classifier(n):
 
     # Generamos 100 puntos y una recta en [-50, 50] x [-50, 50]
     X = uniform_sample(n, 2, -50, 50)
-    v = line_sample(-50, 50)
+    w = line_sample(-50, 50)
 
     # Etiquetamos los puntos según el signo de la distancia a la recta
-    y = np.array([f(x[0], x[1], v) for x in X])
+    y = np.array([f(x[0], x[1], w) for x in X])
 
     # Introducimos ruido en las etiquetas
     y_noise = simulate_noise(y, 0.1)
 
-    return X, y, y_noise, v
+    return X, y, y_noise, w
 
 def predict(X, y, w):
     """Devuelve las métricas de accuracy y balanced accuracy (en %) sobre
@@ -212,7 +212,7 @@ def ex1():
 
     # Obtenemos los datos, la recta que los separa y las etiquetas con y sin ruido
     N = 100
-    X, y_orig, y_noise, v = random_line_classifier(N)
+    X, y_orig, y_noise, w = random_line_classifier(N)
 
     # Convertimos a coordenadas homogéneas
     X = np.hstack((np.ones((N, 1)), X))
@@ -223,18 +223,18 @@ def ex1():
             .format(ap, "sin" if ap == "a" else "con"))
 
         # Resultados de la recta original
-        acc, balanced_acc = predict(X, y, v)
+        acc, balanced_acc = predict(X, y, w)
         print("Recta original")
         print("    Accuracy = {:0.3f}%".format(acc))
         print("    Balanced accuracy = {:0.3f}%\n".format(balanced_acc))
 
         # Tomando como punto inicial el 0
         max_it = 1000
-        v_ini = np.zeros(3)
-        v_pla, it, evol = fit_pla(X, y, max_it, v_ini)
+        w_ini = np.zeros(3)
+        w_pla, it, evol = fit_pla(X, y, max_it, w_ini)
 
         # Mostramos los resultados
-        acc_pla, balanced_acc_pla = predict(X, y, v_pla)
+        acc_pla, balanced_acc_pla = predict(X, y, w_pla)
         print("Recta encontrada por PLA con vector inicial 0")
         print("    Iteraciones:", it)
         print("    Accuracy = {:0.3f}%".format(acc_pla))
@@ -244,8 +244,8 @@ def ex1():
         K = 10
         it_acum = acc_pla_acum = balanced_acc_pla_acum = 0
         for _ in range(K):
-            v_pla, it, _ = fit_pla(X, y, max_it, np.random.rand(3))
-            acc_pla, balanced_acc_pla = predict(X, y, v_pla)
+            w_pla, it, _ = fit_pla(X, y, max_it, np.random.rand(3))
+            acc_pla, balanced_acc_pla = predict(X, y, w_pla)
             it_acum += it
             acc_pla_acum += acc_pla
             balanced_acc_pla_acum += balanced_acc_pla
@@ -257,16 +257,16 @@ def ex1():
         print("    Balanced accuracy = {:0.3f}%".format(balanced_acc_pla_acum / K))
 
         # Mostramos la recta original y una encontrada por PLA
-        scatter_plot(X, ["x", "y"], y, [v, v_pla],
-            ["Recta y = {:0.3f}x + ({:0.3f}) (original)".format(*(-v[:2] / v[2])[::-1]),
-            "Recta y = {:0.3f}x + ({:0.3f}) (PLA)".format(*(-v_pla[:2] / v_pla[2])[::-1])],
+        scatter_plot(X, ["x", "y"], y, [w, w_pla],
+            ["Recta y = {:0.3f}x + ({:0.3f}) (original)".format(*(-w[:2] / w[2])[::-1]),
+            "Recta y = {:0.3f}x + ({:0.3f}) (PLA)".format(*(-w_pla[:2] / w_pla[2])[::-1])],
             title = "Recta de separación original y dada por PLA ({} ruido)".format(
                 "sin" if ap == "a" else "con"))
 
         # Mostramos una gráfica con la evolución del accuracy
         acc_evol = []
-        for w in evol:
-            acc_evol.append(predict(X, y, w)[0])
+        for w_ in evol:
+            acc_evol.append(predict(X, y, w_)[0])
 
         plt.xlabel("Iteraciones")
         plt.ylabel("Accuracy")
@@ -275,6 +275,96 @@ def ex1():
         plt.plot(range(len(evol)), acc_evol)
         plt.show(block = True)
         wait()
+
+#
+# EJERCICIO 2: REGRESIÓN LOGÍSTICA
+#
+
+def err(X, y, w):
+    """Expresión del error cometido por un modelo de regresión logística.
+         - X: matriz de características con primera componente 1.
+         - y: vector de etiquetas.
+         - w: vector de pesos."""
+
+    return np.mean(np.log(1 + np.exp(-y * X.dot(w))))
+
+def derr(x, y, w):
+    """Expresión puntual del gradiente del error cometido por un modelo
+       de regresión logística.
+         - x: vector de características con primera componente 1.
+         - y: vector de etiquetas.
+         - w: vector de pesos."""
+
+    return -y * x / (1 + np.exp(y * x.dot(w)))
+
+def logistic_sgd(X, y, lr, eps):
+    """Implementa el algoritmo de regresión logística con SGD. Devuelve el
+       vector de pesos encontrado y las iteraciones realizadas.
+         - X: matriz de datos, cada uno primera componente 1.
+         - y: vector de etiquetas.
+         - lr: valor del learning rate.
+         - eps: tolerancia para el criterio de parada."""
+
+    n = len(X)
+    d = len(X[0])
+    w = np.zeros(d)  # Punto inicial
+    idxs = np.arange(n)  # Vector de índices
+    it = 0
+    converged = False
+
+    while not converged:
+        w_old = w.copy()
+
+        # Barajamos los índices y actualizamos los pesos
+        np.random.shuffle(idxs)
+        for idx in idxs:
+            w -= lr * derr(X[idx], y[idx], w)
+
+        # Comprobamos condición de parada
+        converged = np.linalg.norm(w_old - w) < eps
+        it += 1
+
+    return w, it
+
+def generate_samples(N, low, high, w):
+    """Genera 'N' puntos de forma uniforme en el cuadrado [low, high] x [low, high],
+       les añade un '1' como primera coordenada, y los etiqueta según el signo de su
+       distancia a la recta dada por 'w'."""
+
+    # Obtenemos N puntos uniformemente distribuidos en [0, 2] x [0, 2]
+    X = uniform_sample(N, 2, 0, 2)
+    X = np.hstack((np.ones((N, 1)), X))
+
+    # Etiquetamos los puntos según el signo de la distancia a la recta
+    y = np.array([f(x[1], x[2], w) for x in X])
+
+    return X, y
+
+def ex2():
+    """Ajuste con regresión logística implementada con SGD para estimar
+       una probabilidad."""
+
+    # Obtenemos una recta aleatoria que corta al cuadrado [0, 2] x [0, 2]
+    w = line_sample(0, 2)
+
+    # Generamos los dataset de entrenamiento y test
+    X, y = generate_samples(100, 0, 2, w)
+    X_test, y_test = generate_samples(1000, 0, 2, w)
+
+    # Ejecutamos el algoritmo de regresión logística
+    w_logistic, it = logistic_sgd(X, y, 0.01, 0.01)
+
+    # Calculamos los errores
+    ein = err(X, y, w_logistic)
+    eout = err(X_test, y_test, w_logistic)
+
+    # Mostramos los resultados
+    print("Iteraciones:", it)
+    print("Ein = {:0.3f}".format(ein))
+    print("Eout (en 1000 nuevas muestras) = {:0.3f}".format(eout))
+    scatter_plot(X, ["x", "y"], y, [w, w_logistic],
+        ["Recta original", "Recta de regresión logística"],
+        "Recta de separación original y dada por RL")
 
 #
 # FUNCIÓN PRINCIPAL
@@ -291,9 +381,9 @@ def main():
 
     print("-------- EJERCICIO SOBRE MODELOS LINEALES --------\n")
     print("--- EJERCICIO 1: ALGORITMO PLA ---")
-    ex1()
+    #ex1()
     print("--- EJERCICIO 2: REGRESIÓN LOGÍSTICA ---")
-    #ex2()
+    ex2()
 
 if __name__ == "__main__":
     main()
