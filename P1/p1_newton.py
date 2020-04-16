@@ -89,7 +89,7 @@ def newton(df, hf, w, lr, max_it):
          - valor del mínimo encontrado.
          - lista con la evolución de los puntos en el algoritmo."""
 
-    w_ = w  # No modificamos el parámetro w
+    w_ = w.copy()  # No modificamos el parámetro w
     it = 0
     evol = [w_]
 
