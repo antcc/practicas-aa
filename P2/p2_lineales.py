@@ -172,13 +172,15 @@ def predict(X, y, w):
 
 def fit_pla(X, y, max_it, w_ini):
     """Ajusta los parámetros de un hiperplano que separe datos en dos clases
-       usando el algoritmo perceptrón. Devuelve también el número de iteraciones.
+       usando el algoritmo perceptrón. Devuelve también el número de iteraciones
+       y la evolución del vector resultado a lo largo de las mismas.
          - X: matriz de datos en coordenadas homogéneas (primera componente 1).
          - y: vector de etiquetas (1 ó -1).
          - max_it: número máximo de iteraciones.
          - w_ini: punto inicial del algoritmo (array de numpy de tipo float)."""
 
     w = w_ini.copy()  # No modificamos el parámetro w_ini
+    evol = [w_ini]
 
     # Repetimos el algoritmo el número de iteraciones deseado
     for it in range(max_it + 1):
@@ -195,7 +197,10 @@ def fit_pla(X, y, max_it, w_ini):
         if not change:
             break
 
-    return w, it
+        # Guardamos la evolución de w
+        evol.append(w.copy())
+
+    return w, it, evol
 
 def ex1():
     """Ejemplos de ajuste con el algoritmo perceptrón sobre datos
@@ -226,7 +231,7 @@ def ex1():
         # Tomando como punto inicial el 0
         max_it = 1000
         v_ini = np.zeros(3)
-        v_pla, it = fit_pla(X, y, max_it, v_ini)
+        v_pla, it, evol = fit_pla(X, y, max_it, v_ini)
 
         # Mostramos los resultados
         acc_pla, balanced_acc_pla = predict(X, y, v_pla)
@@ -239,7 +244,7 @@ def ex1():
         K = 10
         it_acum = acc_pla_acum = balanced_acc_pla_acum = 0
         for _ in range(K):
-            v_pla, it = fit_pla(X, y, max_it, np.random.rand(3))
+            v_pla, it, _ = fit_pla(X, y, max_it, np.random.rand(3))
             acc_pla, balanced_acc_pla = predict(X, y, v_pla)
             it_acum += it
             acc_pla_acum += acc_pla
@@ -257,6 +262,19 @@ def ex1():
             "Recta y = {:0.3f}x + ({:0.3f}) (PLA)".format(*(-v_pla[:2] / v_pla[2])[::-1])],
             title = "Recta de separación original y dada por PLA ({} ruido)".format(
                 "sin" if ap == "a" else "con"))
+
+        # Mostramos una gráfica con la evolución del accuracy
+        acc_evol = []
+        for w in evol:
+            acc_evol.append(predict(X, y, w)[0])
+
+        plt.xlabel("Iteraciones")
+        plt.ylabel("Accuracy")
+        plt.title("Evolución del accuracy en la clasificación durante el algoritmo "
+            + "PLA ({} ruido)".format("sin" if ap == "a" else "con"))
+        plt.plot(range(len(evol)), acc_evol)
+        plt.show(block = True)
+        wait()
 
 #
 # FUNCIÓN PRINCIPAL
