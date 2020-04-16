@@ -22,7 +22,7 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score
 # PARÁMETROS GLOBALES
 #
 
-SEED = 2020  # Semilla general para el programa
+SEED = 2020
 
 #
 # FUNCIONES AUXILIARES
@@ -45,13 +45,12 @@ def scatter_plot(X, axis, y = None, fun = None, label = None,
          - y: vector de etiquetas o clases.
          - fun: función que toma dos parámetros tal que f(x, y) = 0 define
            la frontera del clasificador.
-         - label: etiqueta del clasificador. Debe aparecer obligatoriamente
-           si 'fun' está presente.
+         - label: etiqueta del clasificador.
          - title: título del plot.
          - regions: controla si se pintan las regiones en las que el clasificador
            divide al plano."""
 
-    # Establecemos tamaño e información del plot
+    # Establecemos tamaño, colores e información del plot
     fig = plt.figure(figsize = (8, 6))
     plt.xlabel(axis[0])
     plt.ylabel(axis[1])
@@ -94,7 +93,7 @@ def scatter_plot(X, axis, y = None, fun = None, label = None,
         if regions:
             cont = plt.contourf(xx, yy, z,
                 cmap = cmap, levels = 0, alpha = 0.1)
-            fig.colorbar(cont, aspect = 30)
+            fig.colorbar(cont, aspect = 30, label = "f(x, y)")
 
         # Pintamos el clasificador como la curva de nivel 0 en el plano de
         # la función 'fun'
@@ -102,7 +101,9 @@ def scatter_plot(X, axis, y = None, fun = None, label = None,
             levels = [0], colors = ['tab:blue'],
             linewidths = 2).collections[0].set_label(label)
 
-        plt.legend(loc = "lower right")
+        # Añadimos la leyenda del clasificador
+        if label is not None:
+            plt.legend(loc = "lower right")
 
     # Añadimos leyenda sobre las clases
     if y is not None:
@@ -151,10 +152,10 @@ def ex1():
     X_gauss = gaussian_sample(50, 2, [5, 7])
 
     # Mostramos los resultados
-    print("    --- Apartado a)")
+    print("--- Apartado a)")
     scatter_plot(X_unif, ["x", "y"],
         title = "Nube de 50 puntos uniformes")
-    print("    --- Apartado b)")
+    print("--- Apartado b)")
     scatter_plot(X_gauss, ["x", "y"],
         title = "Nube de 50 puntos gaussianos")
 
@@ -198,8 +199,13 @@ def ex2():
        Posteriormente compara la clasificación realizada por la recta y por
        distintos clasificadores cuadráticos."""
 
+    # Volvemos a establecer la semilla para poder obtener posteriormente
+    # los mismos puntos con las mismas etiquetas
+    np.random.seed(SEED)
+
     # Generamos 100 puntos y una recta en [-50, 50] x [-50, 50]
-    X = uniform_sample(100, 2, -50, 50)
+    N = 100
+    X = uniform_sample(N, 2, -50, 50)
     a, b = line_sample(-50, 50)
     v = lambda x, y: y - a * x - b
 
@@ -231,14 +237,20 @@ def ex2():
         ("f(x,y) = y - ({:0.3f})x - ({:0.3f}) = 0".format(a, b), "recta"),
         (r"$f(x, y) = (x-10)^2 + (y-20)^2 - 400 = 0$", "elipse 1"),
         (r"$f(x, y) = 0.5(x+10)^2 + (y-20)^2 - 400 = 0$", "elipse 2"),
-        (r"$f(x, y) = 0.5(x-10)^2 - (y+20)^2 - 400 = 0$", "elipse 3"),
+        (r"$f(x, y) = 0.5(x-10)^2 - (y+20)^2 - 400 = 0$", "hipérbola"),
         (r"$f(x, y) = y - 20x^2 - 5x + 3$ = 0", "parábola")]
 
     # Mostramos las gráficas
     for fun, (label, name) in zip(classifiers, classifiers_names):
-        scatter_plot(X, ["x", "y"], y, fun, label,
+        scatter_plot(X, ["x", "y"], y_noise, fun, label,
             title = "Frontera de clasificación para la " + name,
             regions = True)
+
+    # Mostramos la proporción de clases
+    positive_prop = np.sum(y_noise == 1) / len(y_noise)
+    print("Proporción de clases:")
+    print("    Clase del 1: {:0.3f}%".format(100 * positive_prop))
+    print("    Clase del -1: {:0.3f}%\n".format(100 * (1 - positive_prop)))
 
     # Mostramos las métricas de clasificación
     for fun, (_, name) in zip(classifiers, classifiers_names):
@@ -266,7 +278,7 @@ def main():
     print("-------- EJERCICIO SOBRE COMPLEJIDAD Y RUIDO --------\n")
     print("--- EJERCICIO 1 ---")
     ex1()
-    print("\n--- EJERCICIO 2 ---")
+    print("--- EJERCICIO 2 ---")
     ex2()
 
 if __name__ == "__main__":
