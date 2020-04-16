@@ -48,12 +48,12 @@ def gd(f, df, w, lr, max_it, eps = -np.inf):
 
     w_ = w.copy()  # No modificamos el parámetro w
     it = 0
-    evol = [w_]
+    evol = [w]
 
     while it < max_it and f(*w_) > eps:
         # Avanzamos en la dirección del gradiente y sentido opuesto
         w_ = w_ - lr * df(*w_)
-        evol += [w_]
+        evol += [w_.copy()]
         it += 1
 
     return w_, it, evol

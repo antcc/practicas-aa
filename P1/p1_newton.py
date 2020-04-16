@@ -91,11 +91,11 @@ def newton(df, hf, w, lr, max_it):
 
     w_ = w.copy()  # No modificamos el parámetro w
     it = 0
-    evol = [w_]
+    evol = [w]
 
     while it < max_it:
         w_ = w_ - lr * np.linalg.inv(hf(*w_)) @ df(*w_)
-        evol += [w_]
+        evol += [w_.copy()]
         it += 1
 
     return w_, evol
