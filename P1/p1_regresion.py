@@ -137,7 +137,7 @@ def scatter_plot(X, axis, y = None, ws = None, ws_labels = None, is_linear = Tru
 def sgd(X, y, lr, batch_size, max_it):
     """Implementación del algoritmo de gradiente descendente estocástico. Devuelve
        el vector de pesos encontrado.
-         - X: vector de características con primera componente 1.
+         - X: matriz con vectores de características con primera componente 1.
          - y: vector de etiquetas.
          - lr: valor del learning rate.
          - max_it: número máximo de iteraciones (criterio de parada).
