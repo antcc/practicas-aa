@@ -352,17 +352,23 @@ def ex2():
     X_test, y_test = generate_samples(1000, 0, 2, w)
 
     # Ejecutamos el algoritmo de regresión logística
-    w_logistic, it = logistic_sgd(X, y, 0.01, 0.01)
+    w_log, it = logistic_sgd(X, y, 0.01, 0.01)
 
     # Calculamos los errores
-    ein = err(X, y, w_logistic)
-    eout = err(X_test, y_test, w_logistic)
+    e_in = err(X, y, w_log)
+    e_out = err(X_test, y_test, w_log)
+    acc_in, balanced_acc_in = predict(X, y, w_log)
+    acc_out, balanced_acc_out = predict(X_test, y_test, w_log)
 
     # Mostramos los resultados
     print("Iteraciones:", it)
-    print("Ein = {:0.3f}".format(ein))
-    print("Eout (en 1000 nuevas muestras) = {:0.3f}".format(eout))
-    scatter_plot(X, ["x", "y"], y, [w, w_logistic],
+    print("Ein = {:0.3f}".format(e_in))
+    print("Eout (en 1000 nuevos puntos) = {:0.3f}".format(e_out))
+    print("Accuracy en training = {:0.3f}%".format(acc_in))
+    print("Balanced accuracy en training = {:0.3f}%".format(balanced_acc_in))
+    print("Accuracy en test = {:0.3f}%".format(acc_out))
+    print("Balanced accuracy en test = {:0.3f}%".format(balanced_acc_out))
+    scatter_plot(X, ["x", "y"], y, [w, w_log],
         ["Recta original", "Recta de regresión logística"],
         "Recta de separación original y dada por RL")
 
@@ -381,7 +387,7 @@ def main():
 
     print("-------- EJERCICIO SOBRE MODELOS LINEALES --------\n")
     print("--- EJERCICIO 1: ALGORITMO PLA ---")
-    #ex1()
+    ex1()
     print("--- EJERCICIO 2: REGRESIÓN LOGÍSTICA ---")
     ex2()
 
