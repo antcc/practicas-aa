@@ -37,7 +37,7 @@ def wait():
 
 def scatter_plot(X, axis, y, ws, labels, title = None):
     """Muestra un scatter plot de puntos etiquetados y varias rectas.
-         - X: vector de características de la forma [1, x1, x2].
+         - X: matriz de características de la forma [1, x1, x2].
          - axis: nombres de los ejes.
          - y: vector de etiquetas o clases.
          - ws: lista de vectores 3-dimensionales que representan cada recta.
@@ -362,8 +362,8 @@ def ex2():
 
     # Mostramos los resultados
     print("Iteraciones:", it)
-    print("Ein = {:0.3f}".format(e_in))
-    print("Eout (en 1000 nuevos puntos) = {:0.3f}".format(e_out))
+    print("E_in = {:0.3f}".format(e_in))
+    print("E_out (en 1000 nuevos puntos) = {:0.3f}".format(e_out))
     print("Accuracy en training = {:0.3f}%".format(acc_in))
     print("Balanced accuracy en training = {:0.3f}%".format(balanced_acc_in))
     print("Accuracy en test = {:0.3f}%".format(acc_out))

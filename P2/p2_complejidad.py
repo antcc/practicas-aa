@@ -40,7 +40,7 @@ def scatter_plot(X, axis, y = None, fun = None, label = None,
     """Muestra un scatter plot con leyenda y (opcionalmente) la frontera
        de un cuadrático con dos grados de libertad, de la forma
        w0 + w1 * x1 + w2 * x2 + w3 * x1 * x2 + w4 * x1^2 + w5 * x2^2.
-         - X: vector de características bidimensional.
+         - X: matriz de características bidimensional.
          - axis: nombres de los ejes.
          - y: vector de etiquetas o clases.
          - fun: función que toma dos parámetros tal que f(x, y) = 0 define
