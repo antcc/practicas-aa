@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# uso: ./p1_bonus.py
+# uso: ./p1_newton.py
 
 ##########################################################################
 # Aprendizaje Automático. Curso 2019/20.

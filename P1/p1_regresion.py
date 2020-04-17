@@ -41,7 +41,7 @@ def wait():
 
 def read_data(file_X, file_y):
     """Leer archivos de características y clases en un par de
-       vectores El formato de salida de las características es
+       vectores. El formato de salida de las características es
        [1, x_1, x_2].
          - file_X: archivo con las características bidimensionales.
          - file_y: archivo con las clases."""
@@ -69,7 +69,7 @@ def read_data(file_X, file_y):
 def scatter_plot(X, axis, y = None, ws = None, ws_labels = None, is_linear = True):
     """Muestra un scatter plot con leyenda y (opcionalmente) rectas
        de regresión.
-         - X: vector de características con primera componente 1, y
+         - X: matriz de características con primera componente 1, y
            con exactamente dos grados de libertad.
          - axis: nombres de los ejes.
          - y: clases.
@@ -174,7 +174,7 @@ def pseudoinverse(X, y):
     """Obtiene un vector de pesos a través del método de la pseudoinversa
        para resolver el problema de mínimos cuadrados. Se emplea la
        descomposición SVD para evitar el cálculo de matrices inversas.
-         - X: vector de características con primera componente 1.
+         - X: matriz de características con primera componente 1.
          - y: vector de etiquetas."""
 
     dims = len(X[0])
@@ -187,7 +187,7 @@ def pseudoinverse(X, y):
 def err(w, X, y):
     """Expresión del error cometido por un modelo de regresión lineal.
          - w: vector de pesos.
-         - X: vector de características con primera componente 1.
+         - X: matriz de características con primera componente 1.
          - y: vector de etiquetas."""
 
     return 1 / len(X) * ((X.dot(w) - y) ** 2).sum()
