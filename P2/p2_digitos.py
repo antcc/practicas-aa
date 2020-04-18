@@ -160,6 +160,24 @@ def pla_pocket(X, y, max_it, w_ini):
 
     return w_best
 
+def err_bound_hoeffding(err, n, m, delta):
+    """Cota de Hoeffding para el error de generalización.
+         - err: error a partir del cual generalizamos.
+         - n: tamaño del conjunto usado para calcular 'err'.
+         - m: tamaño de la clase de hipótesis usada para calcular 'err'.
+         - delta: tolerancia."""
+
+    return err + np.sqrt((1 / (2 * n)) * np.log((2 * m) / delta))
+
+def err_bound_vc(err, n, vc, delta):
+    """Cota para el error de generalización basada en la dimensión VC.
+         - err: error a partir del cual generalizamos.
+         - n: tamaño del conjunto usado para calcular 'err'.
+         - vc: dimensión VC del clasificador usado para calcular 'err'.
+         - delta: tolerancia."""
+
+    return err + np.sqrt((8 / n) * np.log(4 * ((2 * n) ** vc + 1) / delta))
+
 def bonus():
     """Función que implementa el bonus. Consiste en abordar un problema
        de clasificación de dígitos mediante un modelo de regresión
@@ -180,11 +198,26 @@ def bonus():
 
     # Mostramos los resultados
     for w, name in zip(ws, names):
+        n_in = len(X_train)
+        n_test = len(X_test)
+        delta = 0.05
+        e_in = err(X_train, y_train, w)
+        e_test = err(X_test, y_test, w)
+
         print("\n---- {}".format(name))
         print("Vector de pesos =", w)
         print("Errores y accuracy:")
-        print("    E_in = {:0.5f}".format(err(X_train, y_train, w)))
-        print("    E_test = {:0.5f}".format(err(X_test, y_test, w)))
+        print("    E_in = {:0.5f}".format(e_in))
+        print("    E_test = {:0.5f}".format(e_test))
+        print("Cotas para E_out:")
+        print("    Cota usando E_in (VC)= {:0.5f}"
+            .format(err_bound_vc(e_in, n_in, 3, delta)))
+        print("    Cota usando E_test (VC) = {:0.5f}"
+            .format(err_bound_vc(e_test, n_test, 3, delta)))
+        print("    Cota usando E_in (Hoeffding)= {:0.5f}"
+            .format(err_bound_hoeffding(e_in, n_in, 3 * 64, delta)))
+        print("    Cota usando E_test (Hoeffding) = {:0.5f}"
+            .format(err_bound_hoeffding(e_test, n_test, 1, delta)))
 
     # Mostramos los conjuntos de training y test junto con las rectas obtenidas
     scatter_plot(X_train, ["Intensidad promedio", "Simetría"],
