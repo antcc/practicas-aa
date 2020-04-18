@@ -215,7 +215,7 @@ def bonus():
         print("    Cota usando E_test (VC) = {:0.5f}"
             .format(err_bound_vc(e_test, n_test, 3, delta)))
         print("    Cota usando E_in (Hoeffding)= {:0.5f}"
-            .format(err_bound_hoeffding(e_in, n_in, 3 * 64, delta)))
+            .format(err_bound_hoeffding(e_in, n_in, 2 ** (3 * 8 * w.itemsize), delta)))
         print("    Cota usando E_test (Hoeffding) = {:0.5f}"
             .format(err_bound_hoeffding(e_test, n_test, 1, delta)))
 
