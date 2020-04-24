@@ -112,6 +112,11 @@ def read_data(file_X, file_y):
 
     return X, y
 
+def sign(x):
+    """Devuelve el signo de 'x', considerando que es 1 si x = 0."""
+
+    return 1 if x >= 0 else -1
+
 #
 # IMPLEMENTACIÓN DEL BONUS
 #
@@ -119,8 +124,9 @@ def read_data(file_X, file_y):
 def err(X, y, w):
     """Devuelve el error de clasificación del hiperplano dado por 'w' para un
        conjunto de datos  homogéneos 'X' con verdaderas etiquetas 'y'."""
-
-    return np.mean(np.sign(X.dot(w)) != y)
+    
+    incorrect = [sign(x.dot(w)) for x in X] != y
+    return np.mean(incorrect)
 
 def pseudoinverse(X, y):
     """Obtiene un vector de pesos a través del método de la pseudoinversa
@@ -150,7 +156,7 @@ def pla_pocket(X, y, max_it, w_ini):
 
     for _ in range(max_it):
         for x, l in zip(X, y):
-            if np.sign(x.dot(w)) != l:
+            if sign(x.dot(w)) != l:
                 w += l * x
 
         curr_err = err(X, y, w)
@@ -210,10 +216,10 @@ def bonus():
         print("    E_in = {:0.5f}".format(e_in))
         print("    E_test = {:0.5f}".format(e_test))
         print("Cotas para E_out:")
-        print("    Cota usando E_in (VC)= {:0.5f}"
+        print("    Cota usando E_in (VC) = {:0.5f}"
             .format(err_bound_vc(e_in, n_in, 3, delta)))
-        print("    Cota usando E_in (Hoeffding)= {:0.5f}"
-            .format(err_bound_hoeffding(e_in, n_in, 2 ** (3 * 8 * w.itemsize), delta)))
+        print("    Cota usando E_in (Hoeffding) = {:0.5f}"
+            .format(err_bound_hoeffding(e_in, n_in, 2 ** (64 * 3), delta)))
         print("    Cota usando E_test (Hoeffding) = {:0.5f}"
             .format(err_bound_hoeffding(e_test, n_test, 1, delta)))
 
