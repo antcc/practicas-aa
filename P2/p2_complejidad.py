@@ -23,6 +23,8 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score
 #
 
 SEED = 2020
+IMG_PATH = "img/"
+SAVE_FIGURES = False
 
 #
 # FUNCIONES AUXILIARES
@@ -36,7 +38,7 @@ def wait():
     plt.close()
 
 def scatter_plot(X, axis, y = None, fun = None, label = None,
-                 title = None, regions = False):
+                 title = None, regions = False, figname = ""):
     """Muestra un scatter plot con leyenda y (opcionalmente) la frontera
        de un cuadrático con dos grados de libertad, de la forma
        w0 + w1 * x1 + w2 * x2 + w3 * x1 * x2 + w4 * x1^2 + w5 * x2^2.
@@ -48,7 +50,8 @@ def scatter_plot(X, axis, y = None, fun = None, label = None,
          - label: etiqueta del clasificador.
          - title: título del plot.
          - regions: controla si se pintan las regiones en las que el clasificador
-           divide al plano."""
+           divide al plano.
+         - figname: nombre para guardar la gráfica en fichero."""
 
     # Establecemos tamaño, colores e información del plot
     fig = plt.figure(figsize = (8, 6))
@@ -109,7 +112,11 @@ def scatter_plot(X, axis, y = None, fun = None, label = None,
     if y is not None:
         plt.gca().add_artist(legend1)
 
-    plt.show(block = False)
+    if SAVE_FIGURES:
+        plt.savefig(IMG_PATH + figname + ".png")
+    else:
+        plt.show(block = False)
+
     wait()
 
 def uniform_sample(n, d, low, high):
@@ -154,10 +161,12 @@ def ex1():
     # Mostramos los resultados
     print("--- Apartado a)")
     scatter_plot(X_unif, ["x", "y"],
-        title = "Nube de 50 puntos uniformes")
+        title = "Nube de 50 puntos uniformes",
+        figname = "ex1-1-1")
     print("--- Apartado b)")
     scatter_plot(X_gauss, ["x", "y"],
-        title = "Nube de 50 puntos gaussianos")
+        title = "Nube de 50 puntos gaussianos",
+        figname = "ex1-1-2")
 
 #
 # EJERCICIO 2: SEPARACIÓN LINEAL CON RUIDO
@@ -215,7 +224,8 @@ def ex2():
     # Mostramos el resultado de la clasificación
     scatter_plot(X, ["x", "y"], y,
         v, "Recta y = {:0.3f}x + ({:0.3f})".format(a, b),
-        title = "Clasificación dada por una recta (sin ruido)")
+        title = "Clasificación dada por una recta (sin ruido)",
+        figname = "ex1-2-1")
 
     # Introducimos ruido en las etiquetas
     y_noise = simulate_noise(y, 0.1)
@@ -223,7 +233,8 @@ def ex2():
     # Mostramos el resultado de la nueva clasificación
     scatter_plot(X, ["x", "y"], y_noise,
         v, "Recta y = {:0.3f}x + ({:0.3f})".format(a, b),
-        title = "Clasificación dada por una recta (con ruido)")
+        title = "Clasificación dada por una recta (con ruido)",
+        figname = "ex1-2-2")
 
     # Listamos los clasificadores para comparar
     classifiers = [
@@ -238,13 +249,14 @@ def ex2():
         (r"$f(x, y) = (x-10)^2 + (y-20)^2 - 400 = 0$", "elipse 1"),
         (r"$f(x, y) = 0.5(x+10)^2 + (y-20)^2 - 400 = 0$", "elipse 2"),
         (r"$f(x, y) = 0.5(x-10)^2 - (y+20)^2 - 400 = 0$", "hipérbola"),
-        (r"$f(x, y) = y - 20x^2 - 5x + 3$ = 0", "parábola")]
+        (r"$f(x, y) = y - 20x^2 - 5x + 3 = 0$", "parábola")]
 
     # Mostramos las gráficas
     for fun, (label, name) in zip(classifiers, classifiers_names):
         scatter_plot(X, ["x", "y"], y_noise, fun, label,
             title = "Frontera de clasificación para la " + name,
-            regions = True)
+            regions = True,
+            figname = "ex1-2-" + name)
 
     # Mostramos la proporción de clases
     positive_prop = np.sum(y_noise == 1) / len(y_noise)

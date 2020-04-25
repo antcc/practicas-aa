@@ -23,6 +23,8 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score
 #
 
 SEED = 2020
+IMG_PATH = "img/"
+SAVE_FIGURES = False
 
 #
 # FUNCIONES AUXILIARES
@@ -35,14 +37,15 @@ def wait():
     input("\n(Pulsa [Enter] para continuar...)\n")
     plt.close()
 
-def scatter_plot(X, axis, y, ws, labels, title = None):
+def scatter_plot(X, axis, y, ws, labels, title = None, figname = ""):
     """Muestra un scatter plot de puntos etiquetados y varias rectas.
          - X: matriz de características de la forma [1, x1, x2].
          - axis: nombres de los ejes.
          - y: vector de etiquetas o clases.
          - ws: lista de vectores 3-dimensionales que representan cada recta.
          - labels: lista de etiquetas de las rectas.
-         - title: título del plot."""
+         - title: título del plot.
+         - figname: nombre para guardar la gráfica en fichero."""
 
     # Establecemos tamaño, colores e información del plot
     plt.figure(figsize = (8, 6))
@@ -81,7 +84,11 @@ def scatter_plot(X, axis, y, ws, labels, title = None):
     if y is not None:
         plt.gca().add_artist(legend1)
 
-    plt.show(block = False)
+    if SAVE_FIGURES:
+        plt.savefig(IMG_PATH + figname + ".png")
+    else:
+        plt.show(block = False)
+
     wait()
 
 def uniform_sample(n, d, low, high):
@@ -261,19 +268,24 @@ def ex1():
             ["Recta y = {:0.3f}x + ({:0.3f}) (original)".format(*(-w[:2] / w[2])[::-1]),
             "Recta y = {:0.3f}x + ({:0.3f}) (PLA)".format(*(-w_pla[:2] / w_pla[2])[::-1])],
             title = "Recta de separación original y dada por PLA ({} ruido)".format(
-                "sin" if ap == "a" else "con"))
+                "sin" if ap == "a" else "con"),
+            figname = "ex2-1-" + ap)
 
         # Mostramos una gráfica con la evolución del accuracy
         acc_evol = []
         for w_ in evol:
             acc_evol.append(predict(X, y, w_)[0])
 
+        plt.figure(figsize = (8, 6))
         plt.xlabel("Iteraciones")
         plt.ylabel("Accuracy")
         plt.title("Evolución del accuracy en la clasificación durante el algoritmo "
             + "PLA ({} ruido)".format("sin" if ap == "a" else "con"))
         plt.plot(range(len(evol)), acc_evol)
-        plt.show(block = True)
+        if SAVE_FIGURES:
+            plt.savefig(IMG_PATH + "ex2-1-evol-" + ap + ".png")
+        else:
+            plt.show(block = False)
         wait()
 
 #
@@ -370,7 +382,8 @@ def ex2():
     print("Balanced accuracy en test = {:0.3f}%".format(balanced_acc_out))
     scatter_plot(X, ["x", "y"], y, [w, w_log],
         ["Recta original", "Recta de regresión logística"],
-        "Recta de separación original y dada por RL")
+        "Recta de separación original y dada por RL",
+        "ex2-2-1")
 
 #
 # FUNCIÓN PRINCIPAL

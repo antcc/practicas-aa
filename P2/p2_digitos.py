@@ -5,7 +5,7 @@
 ##########################################################################
 # Aprendizaje Automático. Curso 2019/20.
 # Práctica 2: Modelos lineales.
-# Ejercicio sobre clasificación de dígitos (bonus)
+# Ejercicio sobre clasificación de dígitos (bonus).
 # Antonio Coín Castro. Grupo 3.
 ##########################################################################
 
@@ -21,6 +21,8 @@ from matplotlib.colors import ListedColormap
 # PARÁMETROS GLOBALES
 #
 
+IMG_PATH = "img/"
+SAVE_FIGURES = False
 PATH = "datos/"
 SEED = 2020
 EPS = 1e-10
@@ -37,14 +39,15 @@ def wait():
     input("\n(Pulsa [Enter] para continuar...)\n")
     plt.close()
 
-def scatter_plot(X, axis, y, ws, labels, title = None):
+def scatter_plot(X, axis, y, ws, labels, title = None, figname = ""):
     """Muestra un scatter plot de puntos etiquetados y varias rectas.
          - X: matriz de características de la forma [1, x1, x2].
          - axis: nombres de los ejes.
          - y: vector de etiquetas o clases.
          - ws: lista de vectores 3-dimensionales que representan cada recta.
          - labels: lista de etiquetas de las rectas.
-         - title: título del plot."""
+         - title: título del plot.
+         - figname: nombre para guardar la gráfica en fichero."""
 
     # Establecemos tamaño, colores e información del plot
     plt.figure(figsize = (8, 6))
@@ -83,7 +86,11 @@ def scatter_plot(X, axis, y, ws, labels, title = None):
     if y is not None:
         plt.gca().add_artist(legend1)
 
-    plt.show(block = False)
+    if SAVE_FIGURES:
+        plt.savefig(IMG_PATH + figname + ".png")
+    else:
+        plt.show(block = False)
+
     wait()
 
 def read_data(file_X, file_y):
@@ -124,7 +131,7 @@ def sign(x):
 def err(X, y, w):
     """Devuelve el error de clasificación del hiperplano dado por 'w' para un
        conjunto de datos  homogéneos 'X' con verdaderas etiquetas 'y'."""
-    
+
     incorrect = [sign(x.dot(w)) for x in X] != y
     return np.mean(incorrect)
 
@@ -190,16 +197,17 @@ def bonus():
        lineal y mediante el algoritmo PLA-Pocker."""
 
     # Cargamos los datos
+    print("Leyendo datos de entrenamiento y test...")
     X_train, y_train = read_data(PATH + "X_train.npy", PATH + "y_train.npy")
     X_test, y_test = read_data(PATH + "X_test.npy", PATH + "y_test.npy")
 
     # Estimamos un modelo con con pseudoinversa y otro con PLA-Pocket
     max_it = 1000
     w_pseudo = pseudoinverse(X_train, y_train)
-    w_pocket_zeros = pla_pocket(X_train, y_train, max_it, np.random.rand(3))
+    w_pocket_rand = pla_pocket(X_train, y_train, max_it, np.random.rand(3))
     w_pocket_pseudo = pla_pocket(X_train, y_train, max_it, w_pseudo)
 
-    ws = [w_pseudo, w_pocket_zeros, w_pocket_pseudo]
+    ws = [w_pseudo, w_pocket_rand, w_pocket_pseudo]
     names = ["Pseudoinversa", "PLA-Pocket (aleatorio)", "PLA-Pocket (pseudoinversa)"]
 
     # Mostramos los resultados
@@ -226,10 +234,12 @@ def bonus():
     # Mostramos los conjuntos de training y test junto con las rectas obtenidas
     scatter_plot(X_train, ["Intensidad promedio", "Simetría"],
         y_train, ws, names,
-        title = "Conjunto de entrenamiento junto a las rectas estimadas")
+        title = "Conjunto de entrenamiento junto a las rectas estimadas",
+        figname = "bonus-1")
     scatter_plot(X_test, ["Intensidad promedio", "Simetría"],
         y_test, ws, names,
-        title = "Conjunto de test junto a las rectas estimadas")
+        title = "Conjunto de test junto a las rectas estimadas",
+        figname = "bonus-2")
 
 #
 # FUNCIÓN PRINCIPAL
