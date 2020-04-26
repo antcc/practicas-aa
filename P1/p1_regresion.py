@@ -114,7 +114,7 @@ def scatter_plot(X, axis, y = None, ws = None, ws_labels = None, is_linear = Tru
                 np.linspace(ymin - 0.1, ymax + 0.1, 100))
 
             # Función que encapsula el producto escalar <w^T, X>
-            h = lambda x, y, w: np.array([1, x, y, x * y, x * x, y * y]).dot(w)
+            h = lambda x, y, w: np.array([1, x, y, x * y, x * x, y * y, x**3, y**3, (x**2)*y, (y**2)*x]).dot(w)
 
             # Pintamos la curva de nivel 0 en el plano
             for w, l in zip(ws, ws_labels):
@@ -250,7 +250,11 @@ def generate_features(n, is_linear):
             (X.T,
             X[:, 1] * X[:, 2],
             X[:, 1] ** 2,
-            X[:, 2] ** 2)).T
+            X[:, 2] ** 2),
+            X[:, 1] ** 3,
+            X[:, 2] ** 3,
+            (X[:, 1] ** 2) * X[:, 2],
+            (X[:, 2] ** 2) * X[:, 1]).T
 
     # Generamos etiquetas y perturbamos aleatoriamente un 10%
     y = np.array([f(x[1], x[2]) for x in X])
@@ -330,7 +334,7 @@ def ex2():
     # Realizamos el experimento no lineal 1000 veces
     errors_nl = np.array([0.0, 0.0])
     for _ in range(N):
-        errors_nl += experiment(is_linear= False, lr = 0.3)
+        errors_nl += experiment(is_linear = False, lr = 0.3)
     errors_nl /= N
 
     print("  Errores medios en 1000 experimentos con características no lineales:")
