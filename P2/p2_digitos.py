@@ -80,7 +80,7 @@ def scatter_plot(X, axis, y, ws, labels, title = None, figname = ""):
             x = np.array([xmin - scale_x, xmax + scale_x])
             plt.plot(x, (-w[0] - w[1] * x) / w[2], label = l, linewidth = 2)
 
-        plt.legend(loc = "lower right")
+        plt.legend(loc = "lower left")
 
     # Añadimos leyenda sobre las clases
     if y is not None:
@@ -160,6 +160,7 @@ def pla_pocket(X, y, max_it, w_ini):
     w = w_ini.copy()
     w_best = w.copy()
     best_err = err(X, y, w_best)
+    evol = [w_ini]
 
     for _ in range(max_it):
         for x, l in zip(X, y):
@@ -171,7 +172,9 @@ def pla_pocket(X, y, max_it, w_ini):
             best_err = curr_err
             w_best = w.copy()
 
-    return w_best
+        evol.append(w_best.copy())
+
+    return w_best, evol
 
 def err_bound_hoeffding(err, n, m, delta):
     """Cota de Hoeffding para el error de generalización.
@@ -202,10 +205,10 @@ def bonus():
     X_test, y_test = read_data(PATH + "X_test.npy", PATH + "y_test.npy")
 
     # Estimamos un modelo con con pseudoinversa y otro con PLA-Pocket
-    max_it = 1000
+    max_it = 500
     w_pseudo = pseudoinverse(X_train, y_train)
-    w_pocket_rand = pla_pocket(X_train, y_train, max_it, np.random.rand(3))
-    w_pocket_pseudo = pla_pocket(X_train, y_train, max_it, w_pseudo)
+    w_pocket_rand, evol_random = pla_pocket(X_train, y_train, max_it, np.random.rand(3))
+    w_pocket_pseudo, evol_pseudo = pla_pocket(X_train, y_train, max_it, w_pseudo)
 
     ws = [w_pseudo, w_pocket_rand, w_pocket_pseudo]
     names = ["Pseudoinversa", "PLA-Pocket (aleatorio)", "PLA-Pocket (pseudoinversa)"]
@@ -240,6 +243,24 @@ def bonus():
         y_test, ws, names,
         title = "Conjunto de test junto a las rectas estimadas",
         figname = "bonus-2")
+
+    # Mostramos una gráfica con la evolución del accuracy
+    for evol, name in zip([evol_random, evol_pseudo], ["random", "pseudo"]):
+        acc_evol = []
+        for w_ in evol:
+            acc_evol.append(100.0 * (1 - err(X_train, y_train, w_)))
+
+        plt.figure(figsize = (8, 6))
+        plt.xlabel("Iteraciones")
+        plt.ylabel("Accuracy")
+        plt.title("Evolución del accuracy en la clasificación durante el algoritmo "
+            + "PLA-Pocket ({})".format(name))
+        plt.plot(range(len(evol)), acc_evol)
+        if SAVE_FIGURES:
+            plt.savefig(IMG_PATH + "bonus-evol-" + name + ".png")
+        else:
+            plt.show(block = False)
+        wait()
 
 #
 # FUNCIÓN PRINCIPAL

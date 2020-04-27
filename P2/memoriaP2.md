@@ -122,7 +122,7 @@ Clasificador: parábola
 
 ```
 
-Vemos cómo de los cuatro clasificadores cuadráticos las elipses son las que más *accuracy* consiguen, mientras que la hipérbola y la parábola obtienen una puntuación muy baja (como ya podíamos adivinar a partir de las gráficas). En nuestro caso la proporción de clases es del 65% para la clase del 1 y del 35% para la clase del -1, por lo que en la métrica balanceada los dos últimos clasificadores mejoran un poco al tener una región negativa bastante mayor. Sin embargo, ninguno de estos clasificadores cuadráticos consigue siquiera destacar ante un *clasificador aleatorio*, que obtendría de media un *accuracy* del 50%, y no se acerca ni por asomo a los resultados obtenidos con el clasificador lineal.
+Vemos cómo de los cuatro clasificadores cuadráticos las elipses son las que más *accuracy* consiguen, mientras que la hipérbola y la parábola obtienen una puntuación muy baja (como ya podíamos adivinar a partir de las gráficas). En nuestro caso la proporción de clases es del 65% para la clase del 1 y del 35% para la clase del -1, por lo que en la métrica balanceada los dos últimos clasificadores mejoran un poco. Sin embargo, ninguno de estos clasificadores cuadráticos consigue siquiera destacar ante un *clasificador aleatorio*, que obtendría de media un *accuracy* del 50%, y no se acerca ni por asomo a los resultados obtenidos con el clasificador lineal.
 
 Podemos concluir que en este caso el aumento en la complejidad del modelo no conduce a una mejora de resultados, pues aún habiendo introducido ruido en las etiquetas, el mejor clasificador sigue siendo el más sencillo: la función lineal.
 
@@ -143,7 +143,7 @@ En este ejercicio, desarrollado en el script `p2_lineales.py`, implementamos un 
 
 En la función `fit_pla` se desarrolla el algoritmo perceptrón que calcula el hiperplano solución a un problema de clasificación binaria. Acepta como parámetros la matriz de datos en coordenadas homogéneas (con un 1 como primera componente), el vector de etiquetas reales, el número máximo de iteraciones y los pesos iniciales. Devuelve un vector de pesos $w$ tal que la frontera de clasificación viene determinada por $w^Tx = 0$.
 
-La estrategia es simple: en cada iteración se realiza una pasada por el conjunto de datos completo. Para cada dato $x(t)$, si el vector de pesos actual $w(t)$ lo clasifica correctamente no hacemos nada, y si lo clasifica erróneamente (es decir, $\operatorname{signo}(w(t)^Tx(t)) \neq y(t)$), se actualizan los pesos mediante la fórmula
+La estrategia es simple: en cada iteración se realiza una pasada por el conjunto de datos completo. Para cada dato $x(t)$, si el vector de pesos actual $w(t)$ lo clasifica correctamente según la etiqueta $y(t)$ no hacemos nada, y si lo clasifica erróneamente (es decir, $\operatorname{signo}(w(t)^Tx(t)) \neq y(t)$), se actualizan los pesos mediante la fórmula
 $$w(t+1) = w(t) + y(t)x(t).$$
 
 El algoritmo se detiene cuando todos los datos están bien clasificados, o cuando alcanza el número máximo de iteraciones. Hemos añadido también una variable que va guardando la evolución temporal del vector de pesos, para poder hacer después una gráfica y analizarla.
@@ -216,7 +216,7 @@ Observamos que en este caso, tanto partiendo del vector 0 como partiendo de un v
 \label{fig:6}
 \end{figure}
 
-Si visualizamos esta vez en la Figura \ref{fig:6} la evolución temporal del *accuracy* podemos observar el fenómeno que describíamos antes: como nunca se va a alcanzar la clasificación perfecta, el *accuracy* oscila de forma significativa de una iteración a otra y nunca llega a converger. Podemos concluir que **este algoritmo no es adecuado cuando tenemos datos que no son linealmente separables**.
+Si visualizamos esta vez en la Figura \ref{fig:7} la evolución temporal del *accuracy* podemos observar el fenómeno que describíamos antes: como nunca se va a alcanzar la clasificación perfecta, el *accuracy* oscila de forma significativa de una iteración a otra y nunca llega a converger. Podemos concluir que **este algoritmo no es adecuado cuando tenemos datos que no son linealmente separables**.
 
 \begin{figure}[h!]
 \centering
@@ -225,32 +225,64 @@ Si visualizamos esta vez en la Figura \ref{fig:6} la evolución temporal del *ac
 \label{fig:7}
 \end{figure}
 
-## RL
+## Regresión logística
 
-- SGD con bs=1, si no no converge (se ha probado)
-Instead of reading everything and then correct yourself at the end, you correct yourself on the way, making the next reads more useful since you correct yourself from a better guess.
+En este apartado queremos ver cómo funciona la regresión logística en el caso simple en el que estimamos una probabilidad $0/1$. Consideramos como espacio de características $\mathcal{X} = [0,2] \times [0,2]$ y como etiquetas $\mathcal{Y} = \{-1, 1\}$, de forma que la asignación de las mismas sea una función determinista de las características. Elegimos una recta en el plano que pase por $\mathcal{X}$ como frontera entre la región en la que la probabilidad es 0 ($y=-1$) y la región en la que la probabilidad es 1 ($y=1$).
+
+La regresión logística consiste en estimar unos pesos $w$ para la hipótesis $h(x) = \theta(w^Tx)$, donde $\theta$ es la *función logística*:
+$$\theta(s) = \frac{e^s}{1+e^s}.$$
+
+Sabemos que el resultado es un número en $[0,1]$, que interpretamos como una probabilidad. Si queremos adaptarlo a un problema de clasificación binaria establecemos un *umbral* en 0.5, e interpretamos que $y = 1 \iff \theta(w^Tx) \ge 0.5$. Se puede comprobar que esta última condición equivale a que $w^Tx \ge 0$, por lo que podemos seguir con el enfoque de los ejercicios anteriores y etiquetar los puntos según el signo de su distancia a una recta.
+
+Para implementar la regresión logística utilizamos el algoritmo de minimización iterativa SGD, desarrollado en la función `logistic_sgd`, que consiste en minimizar el *error logístico*:
+$$E_{in}(w) = \frac{1}{N}\sum_{n=1}^N \log(1 + e^{-y_nw^Tx_n}).$$
+
+Para ello avanzamos en la dirección y sentido de máxima pendiente: la del gradiente cambiado de signo. Para el cálculo de este gradiente utilizamos un subconjunto (*batch*) de los datos, siendo su expresión general para $N$ datos
+$$\nabla E_{in}(w) = \frac{-1}{N} \sum_{n=1}^N \frac{y_nx_n}{1 + e^{y_nw^Tx_n}}.$$
+
+Barajamos los datos tras cada época (cada pasada completa por los datos), y detenemos el algoritmo cuando la norma de la diferencia de los pesos entre dos épocas consecutivas sea menor que $0.01$.
+
+Ahora, generamos una muestra de 100 puntos y los etiquetamos según el signo de la distancia a la recta elegida. A continuación aplicamos el algoritmo con un *learning rate* de $0.01$, y un tamaño de batch de 1 (se ha probado con otros tamaños más elevados pero no se obtenían buenos resultados). Los resultados son los siguientes:
 
 ```
---- EJERCICIO 2: REGRESIÓN LOGÍSTICA ---
 Iteraciones: 501
 E_in = 0.128
-E_out (en 1000 nuevos puntos) = 0.119
 Accuracy en training = 98.000%
 Balanced accuracy en training = 96.667%
-Accuracy en test = 99.500%
-Balanced accuracy en test = 99.284%
-
 ```
 
-# Bonus
+Observamos que debido al criterio de parada impuesto no conseguimos un *accuracy* del 100%. Sin embargo, es un resultado suficientemente bueno, ya que prácticamente clasificamos bien todos los puntos. Pasamos a estimar el error de generalización $E_{out}$ generando una nueva muestra de 1000 puntos y clasificándolos según la recta encontrada con regresión logística. Los resultados son:
 
--1 --> 4
-1 --> 8
+```
+E_out = 0.119
+Accuracy en test = 99.500%
+Balanced accuracy en test = 99.284%
+```
 
-- sabemos que los datos no son linealmente separables (por eso usamos pocket, que es más lento que solo PLA), así que el número de iters es fijo.
-- Se usa como ein el error de clasificación
-- Cotas: usando VC y usando hoeffding. Los puntos de test < puntos de training.
-- mostrar gráfica con la evolución de pla para contrastar
+\begin{figure}[h!]
+\centering
+\includegraphics[width=.7\textwidth]{img/ex2-2-1.png}
+\caption{Conjunto de test junto a la recta de clasificación original y la encontrada con regresión logística.}
+\label{fig:8}
+\end{figure}
+
+Como podemos ver la generalización es bastante buena, obteniendo un valor pequeño para $E_{out}$ y clasificando correctamente casi el 100% de los puntos. Concluimos que hemos conseguido adaptar con éxito el modelo de regresión logística para realizar clasificación binaria.
+
+# Ejercicio sobre clasificación de dígitos (bonus)
+
+Este ejercicio se desarrolla en el script `p2_digitos.py`, donde trabajamos sobre los mismos datos de dígitos manuscritos de la práctica anterior. Extraemos para los dígitos 4 y 8 información sobre la intensidad promedio y la simetría respecto al eje vertical, y planteamos con esta información un problema de clasificación binaria.
+
+El espacio de características es $\mathcal{X} = \{1\} \times \mathbb{R}^2$, y el espacio de etiquetas considerado es $\mathcal{Y} = \{-1, 1\}$, entendiendo que el $-1$ corresponde al dígito $4$ y el $1$ al dígito 8. Queremos estimar la verdadera función de etiquetado $f: \mathcal{X} \to \mathcal{Y}$, que es desconocida. Para ello, consideramos nuestro conjunto de datos de entrenamiento junto con sus verdaderas etiquetas:
+$$\mathcal{D} = \{ (x_n, y_n) \subseteq \mathcal{X} \times \mathcal{Y}: n = 1, \dots N \}, \quad \text{ con } N=1194.$$
+Suponemos que hay una distribución de probabilidad $\mathcal{P}$ (desconocida) en $\mathcal{X} \times \mathcal{Y}$, y que los elementos de $\mathcal{D}$ se extraen de forma independiente y son idénticamente distribuidos respecto de $\mathcal{P}$. Nuestro objetivo es entonces apender un función que estime a $f$, dentro de un conjunto de posibles funciones candidatas que en nuestro modelo es:
+$$\mathcal{H} = \{ h:\mathbb{R}^{3} \to \mathbb{R} \ | \ h(x) = \operatorname{signo}(w^Tx), \ w \in \mathbb{R}^{3} \}.$$
+
+Utilizamos la técnica de *empirical risk minimization*, empleando como medida de error la pérdida 0-1. El problema se reduce entonces a encontrar una función $g \in \mathcal{H}$ de forma que minimice el error de clasificación, a saber:
+$$E_{in}(h) = \frac{1}{N} \sum_{n=1}^N [[ h(x_n) \neq y_n]], \quad h \in \mathcal{H}.$$
+
+Notamos que basta buscar el vector de pesos $w$ adecuado, que representa una recta en el plano y define la frontera de clasificación entre las clases. Vamos a usar como algoritmos de aprendizaje primero un modelo de regresión lineal y después intentar una mejora con el algoritmo PLA-Pocket. Mediremos la bondad del modelo calculando el error en el conjunto de test ($E_{test}$), que consta de 366 datos en las mismas condiciones que los de $\mathcal{D}$.
+
+Como modelo de regresión lineal elegimos el método de la pseudoinversa, que ya lo estudiamos en la práctica anterior. Si lo aplicamos a los datos de entrenamiento obtenemos lo siguiente:
 
 ```
 ---- Pseudoinversa
@@ -258,28 +290,101 @@ Vector de pesos = [-0.507 8.251 0.445]
 Errores:
     E_in = 0.22781
     E_test = 0.25137
-Cotas para E_out:
-    Cota usando E_in (VC) = 0.65874
-    Cota usando E_in (Hoeffding) = 0.46713
-    Cota usando E_test (Hoeffding) = 0.32236
+```
 
+Si representamos los datos observamos que no son linealmente separables, por lo que es un problema adecuado para utilizar el algoritmo PLA-Pocket. Este es solo una mejora del algoritmo perceptrón que retiene el mejor vector de pesos encontrado hasta el momento (el que obtiene el menor error de clasificación en toda la muestra), y solo lo actualiza si el nuevo vector de pesos proporciona un error menor. De esta forma nos aseguramos de que la calidad de la solución no empeora conforme avanzan las iteraciones. Se implementa en la función `pla_pocket`, y en este caso el único criterio de parada es el número máximo de iteraciones (sabemos que los datos no son linealmente separables, por lo que nunca va a conseguir clasificarlos todos correctamente).
+
+Lo ejecutamos con 500 iteraciones, primero usando como vector inicial un vector aleatorio con componentes uniformes en $[0,1]$ y depués usando como vector inicial el vector $w_{pseudo}$ que obtenemos tras aplicar el método de la pseudoinversa. Los resultados obtenidos son:
+
+```
 ---- PLA-Pocket (aleatorio)
 Vector de pesos = [-8.014 140.224 8.222]
 Errores:
     E_in = 0.22864
     E_test = 0.24863
-Cotas para E_out:
-    Cota usando E_in (VC) = 0.65958
-    Cota usando E_in (Hoeffding) = 0.46797
-    Cota usando E_test (Hoeffding) = 0.31962
-
 ---- PLA-Pocket (pseudoinversa)
 Vector de pesos = [-6.507 94.333 4.884]
 Errores:
     E_in = 0.22529
     E_test = 0.25410
+```
+
+Mostramos a continuación dos gráficas de los conjuntos de entrenamiento y test junto a las tres rectas estimadas.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=.7\textwidth]{img/bonus-1.png}
+\caption{Conjunto de entrenamiento junto a las rectas estimadas.}
+\label{fig:9}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=.7\textwidth]{img/bonus-2.png}
+\caption{Conjunto de test junto a las rectas estimadas.}
+\label{fig:10}
+\end{figure}
+
+Vemos cómo en el caso aleatorio obtenemos un $E_{in}$ ligeramente más grande que con la pseudoinversa, pero el error en el conjunto de test es más pequeño, lo cual es bueno. En el caso de utilizar el vector $w_{pseudo}$ como punto inicial conseguimos disminuir el error de entrenamiento, pero no el error en test. Sin embargo, la mejora que obtenemos partiendo de unos pesos iniciales "buenos" es que la convergencia es más rápida, y aunque no siempre ocurra, es probable que podamos mejorar la clasificación obtenida.
+
+Para comprobar empíricamente la última afirmación sobre la velocidad de convergencia realizamos unas gráficas de evolución temporal como las que hicimos en el segundo ejercicio para el algoritmo perceptrón. En este caso ya sabemos de antemano que nunca empeoraremos.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=.7\textwidth]{img/bonus-evol-random.png}
+\caption{Evolución del \textit{accuracy} con las iteraciones en PLA-Pocket (aleatorio).}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=.7\textwidth]{img/bonus-evol-pseudo.png}
+\caption{Evolución del \textit{accuracy} con las iteraciones en PLA-Pocket (pseudoinversa).}
+\end{figure}
+
+Observamos cómo efectivamente la convergencia se alcanza antes partiendo de los pesos encontrados por el método de regresión lineal, que ya comienzan en un *accuracy* elevado.
+
+Pasamos por último a calcular unas cotas para el error fuera de la muestra ($E_{out}$), ya conocida nuestra hipótesis elegida $g$. Para esto tenemos tenemos dos enfoques distintos.
+
+### Cota usando la dimensión VC
+
+Sabemos que, para cualquier nivel de tolerancia $\delta > 0$, se tiene
+$$E_{out}(g) \leq E_{in}(g) + \sqrt{\frac{8}{N}\log\left( \frac{4((2N)^{d_{\text{VC}}} + 1)}{\delta} \right)}, \quad \text{con probabilidad } \geq 1-\delta,$$
+
+donde $N$ es el tamaño del conjunto de entrenamiento y $d_{\text{VC}}$ es la dimensión VC del clasificador utilizado. En nuestro caso estamos ante un perceptrón 2D, cuya dimensión VC sabemos que es 3. Implementamos este cálculo en la función `err_bound_vc`, y calculamos las cotas sobre nuestras tres hipótesis anteriores, tomando como tolerancia $\delta = 0.05$.
+
+```
+---- Pseudoinversa
+Cota para E_out usando E_in (VC) = 0.65874
+---- PLA-Pocket (aleatorio)
+Cotas para E_out usando E_in (VC) = 0.65958
+---- PLA-Pocket (pseudoinversa)
+Cotas para E_out usando E_in (VC) = 0.65623
+```
+
+### Cota utilizando la desgiualdad de Hoeffding
+
+La desigualdad de Hoeffding nos proporciona también una cota de generalización. Si $N$ es el tamaño del conjunto de entrenamiento y $\delta > 0$, tenemos que
+$$E_{out}(g) \leq E_{in}(g) + \sqrt{\frac{1}{2N}\log \frac{2|\mathcal{H}|  }{\delta}}, \quad \text{con probabilidad } \geq 1-\delta.$$
+
+En nuestro caso tenemos un inconveniente, pues $|\mathcal H | = \infty$. Sin embargo, como estamos trabajando en un ordenador con precisión finita, podemos discretizar el espacio y estimar el cardinal de $\mathcal H$ como el número de rectas distintas que podemos representar con tres parámetros. Como cada flotante ocupa 64 bits, tenemos que $|\mathcal H| \approx 2^{64 \cdot 3}$.
+
+Por otro lado, la cota de Hoeffding también se puede aplicar utilizando $E_{test}$ en lugar de $E_{in}$. En este caso $N$ sería el número de puntos de test, pero la gran diferencia es que podemos tomar $|\mathcal{H}| = 1$. Esto se debe a que al calcular el error en el conjunto de test ya hemos fijado nuestra hipótesis $g$, por lo que **el conjunto de posibles candidatas se reduce a ella misma**.
+
+Calculamos las cotas para $E_{out}$ de estas dos maneras, a través de la función `err_bound_hoeffding`, y obtenemos:
+
+```
+---- Pseudoinversa
 Cotas para E_out:
-    Cota usando E_in (VC) = 0.65623
+    Cota usando E_in (Hoeffding) = 0.46713
+    Cota usando E_test (Hoeffding) = 0.32236
+---- PLA-Pocket (aleatorio)
+Cotas para E_out:
+    Cota usando E_in (Hoeffding) = 0.46797
+    Cota usando E_test (Hoeffding) = 0.31962
+---- PLA-Pocket (pseudoinversa)
+Cotas para E_out:
     Cota usando E_in (Hoeffding) = 0.46462
     Cota usando E_test (Hoeffding) = 0.32509
 ```
+
+Como vemos, estas cotas son más finas que las que nos proporcionaba la dimensión VC. Además, dentro de estas dos la que utiliza $E_{test}$ es mejor, ya que nos da una cota más ajustada sobre el error de generalización. Esto no es de extrañar, ya que al calcular el error sobre el conjunto de test lo estamos haciendo sobre datos que no hemos visto previamente, lo cual es más representativo que si usamos datos con los que hemos entrenado y a los que nos hemos podido ajustar demasiado.

@@ -380,9 +380,10 @@ def ex2():
     print("Balanced accuracy en training = {:0.3f}%".format(balanced_acc_in))
     print("Accuracy en test = {:0.3f}%".format(acc_out))
     print("Balanced accuracy en test = {:0.3f}%".format(balanced_acc_out))
-    scatter_plot(X, ["x", "y"], y, [w, w_log],
+
+    scatter_plot(X_test, ["x", "y"], y_test, [w, w_log],
         ["Recta original", "Recta de regresión logística"],
-        "Recta de separación original y dada por RL",
+        "Recta de separación original y dada por RL en el conjunto de test",
         "ex2-2-1")
 
 #
