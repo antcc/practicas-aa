@@ -17,6 +17,7 @@ Antonio Coín Castro. Grupo 3.
 
 import numpy as np
 from matplotlib import pyplot as plt
+from timeit import default_timer
 
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.decomposition import PCA
@@ -66,25 +67,23 @@ def classification_fit():
     print("Hecho.\n")
 
     """
-    Pipeline 1: var + standardize + SelectFromModel(LassoCV) + poly2 + standardize + RL (L2)
-        Test_acc: 97.941%
-    Pipeline 2: var + PCA(0.95) + poly2 + standardize + RL (L2)
-        Test_ac: 98.609
+    Pipeline 1: var2 + standardize2 + SelectFromModel(LassoCV(cv=5), th = 1e-2)
+        + poly2 + standardize + RL (Cs = 3, cv=5, L2)
+        Test_acc: 98.275%
+    Pipeline 2: PCA(0.95) + poly2 + standardize + RL (Cs=3, cv=5, L2)
+        Test_ac: 98.720%
     """
 
-    # TODO: hacer cv antes y ver qué C sale
-    """print(GridSearchCV(LinearSVC(penalty = "l1", dual = False, max_iter=10000),
-        cv = 5, param_grid = {"C": [0.001, 0.01, 0.1, 1, 10]},
-        n_jobs = -1).fit(X_train, y_train).best_params_)"""
-
-    var = ("Eliminar varianza 0", VarianceThreshold())
+    var2 = ("Eliminar varianza 0", VarianceThreshold(0.1))
 
     standardize2 = ("Estandarización 2", StandardScaler())
 
-    # Hacemos selección de variables + whitening
-    #selection = ("PCA", PCA(n_components = 0.95))
-    selection = ("Regresión L1 para selección",
-        SelectFromModel(LassoCV(cv = StratifiedKFold(5), n_jobs = -1)))
+    # Hacemos selección de variables + whitening (?)
+    selection = ("PCA", PCA(n_components = 0.95))
+    selection2 = ("Regresión L1 para selección",
+        SelectFromModel(
+            LassoCV(cv = StratifiedKFold(5), n_jobs = -1),
+            threshold = 1e-2))
 
     # Transformamos a características polinómicas de grado 2
     poly2 = ("Polinomios grado 2", PolynomialFeatures(2))
@@ -94,20 +93,23 @@ def classification_fit():
 
     # Elegimos un clasificador
     rl = ("Regresión logística",
-        LogisticRegressionCV(cv = 5, penalty = 'l2',
+        LogisticRegressionCV(Cs = 3, cv = 5, penalty = 'l2',
             scoring = 'accuracy', max_iter = 500, n_jobs = -1))
 
     # Juntamos preprocesado y clasificación
-    classifier = Pipeline([var, standardize2, selection, poly2, standardize, rl])
+    classifier = Pipeline([var2, standardize2, selection2, poly2, standardize, rl])
 
     # Entrenamos el modelo
+    start = default_timer()
     classifier.fit(X_train, y_train)
+    elapsed = default_timer() - start
 
     # Mostramos los resultados
     print("Accuracy en training: {:.3f}%".format(
         100.0 * classifier.score(X_train, y_train)))
     print("Accuracy en test: {:.3f}%".format(
         100.0 * classifier.score(X_test, y_test)))
+    print("Tiempo: {:.3f}s".format(elapsed))
 
 #
 # FUNCIÓN PRINCIPAL
