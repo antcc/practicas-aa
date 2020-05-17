@@ -22,8 +22,9 @@ from timeit import default_timer
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectFromModel, VarianceThreshold
-from sklearn.model_selection import StratifiedKFold
-from sklearn.linear_model import LogisticRegressionCV, LassoCV
+from sklearn.model_selection import StratifiedKFold, GridSearchCV
+from sklearn.linear_model import LassoCV, LogisticRegression, SGDClassifier, RidgeClassifier, Perceptron
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 
 #
@@ -57,25 +58,26 @@ def read_data(filename):
 #
 
 def classification_fit():
-    """Desarrolla la parte de ajustar un modelo lineal para resolver un
-       problema de clasificación."""
+    """Ajuste de un modelo lineal para resolver un problema de clasificación."""
 
     # Cargamos los datos de entrenamiento y test
     print("Cargando datos de entrenamiento y test... ", end = "")
-    X_train, y_train = read_data(PATH + "optdigits.tra")
-    X_test, y_test = read_data(PATH + "optdigits.tes")
+    X_train_pre, y_train = read_data(PATH + "optdigits.tra")
+    X_test_pre, y_test = read_data(PATH + "optdigits.tes")
     print("Hecho.\n")
 
     """
-    Pipeline 1: var2 + standardize2 + SelectFromModel(LassoCV(cv=5), th = 1e-2)
+    Pipeline 1: var2 + standardize2 + SelectFromModel(LassoCV(cv=5), th = 0.05)
         + poly2 + standardize + RL (Cs = 3, cv=5, L2)
-        Test_acc: 98.275%
+        Test_acc: 98.386%
     Pipeline 2: PCA(0.95) + poly2 + standardize + RL (Cs=3, cv=5, L2)
         Test_ac: 98.720%
     """
 
+    # Eliminamos variables con varianza < 0.1
     var2 = ("Eliminar varianza 0", VarianceThreshold(0.1))
 
+    # Estandarizamos en origen y escala
     standardize2 = ("Estandarización 2", StandardScaler())
 
     # Hacemos selección de variables + whitening (?)
@@ -83,32 +85,62 @@ def classification_fit():
     selection2 = ("Regresión L1 para selección",
         SelectFromModel(
             LassoCV(cv = StratifiedKFold(5), n_jobs = -1),
-            threshold = 1e-2))
+            threshold = 0.05))
 
     # Transformamos a características polinómicas de grado 2
     poly2 = ("Polinomios grado 2", PolynomialFeatures(2))
 
-    # Normalizamos en origen y escala
+    # Estandarizamos en origen y escala
     standardize = ("Estandarización", StandardScaler())
 
-    # Elegimos un clasificador
-    rl = ("Regresión logística",
-        LogisticRegressionCV(Cs = 3, cv = 5, penalty = 'l2',
-            scoring = 'accuracy', max_iter = 500, n_jobs = -1))
+    # Juntamos todo el preprocesado en un pipeline
+    preproc = Pipeline([selection, poly2, standardize])
 
-    # Juntamos preprocesado y clasificación
-    classifier = Pipeline([var2, standardize2, selection2, poly2, standardize, rl])
+    # Preprocesamos los datos de entrenamiento y test
+    X_train = preproc.fit_transform(X_train_pre, y_train)
+    X_test = preproc.transform(X_test_pre)
 
-    # Entrenamos el modelo
+    # Elegimos los modelos y sus parámetros para CV
+    models = [
+        ("Logistic Regression", LogisticRegression(penalty = 'l2', max_iter = 500)),
+        ("SGD + Hinge", SGDClassifier(loss = 'hinge')),
+        ("Ridge", RidgeClassifier()),
+        ("PLA", Perceptron())]
+    params_lst = [
+        {"C": [1e-4, 1.0, 1e4]},
+        {"alpha": [1e-6, 1e-5, 1e-3, 1e-1, 1e2]},
+        {"alpha": [0.01, 0.1, 1.0, 10.0]},
+        {"penalty": ['l1', 'l2'], "alpha": [1e-6, 1e-4, 1e-2, 1.0]},
+    ]
+
+    for (name, model), params in zip(models, params_lst):
+        # Buscamos los mejores parámetros por CV
+        clf = GridSearchCV(model, params, scoring = 'accuracy', n_jobs = -1, cv = 5)
+
+        # Entrenamos el mejor modelo
+        start = default_timer()
+        clf.fit(X_train, y_train)
+        elapsed = default_timer() - start
+
+        # Mostramos los resultados
+        print("--- {} ---".format(name))
+        print("Mejores parámetros: {}".format(clf.best_params_))
+        print("Accuracy en training: {:.3f}%".format(
+            100.0 * clf.score(X_train, y_train)))
+        print("Accuracy en test: {:.3f}%".format(
+            100.0 * clf.score(X_test, y_test)))
+        print("Tiempo: {:.3f}s\n".format(elapsed))
+
+    # Comparación con modelo no lineal
     start = default_timer()
-    classifier.fit(X_train, y_train)
+    clf = RandomForestClassifier(n_estimators = 200, n_jobs = -1).fit(X_train, y_train)
     elapsed = default_timer() - start
 
-    # Mostramos los resultados
+    print("--- Random Forest (n = 200) ---")
     print("Accuracy en training: {:.3f}%".format(
-        100.0 * classifier.score(X_train, y_train)))
+        100.0 * clf.score(X_train, y_train)))
     print("Accuracy en test: {:.3f}%".format(
-        100.0 * classifier.score(X_test, y_test)))
+        100.0 * clf.score(X_test, y_test)))
     print("Tiempo: {:.3f}s".format(elapsed))
 
 #
