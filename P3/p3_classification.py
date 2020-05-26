@@ -66,43 +66,21 @@ def read_data(filename):
 def preprocess_pipeline(selection_strategy = 0):
     """Construye una lista de transformaciones y parámetros para el
        preprocesamiento de datos. La estrategia de selección de variables
-       se controla mediante el parámetro 'selecion_strategy':
-         * 0: Mediante PCA
-         * 1: Mediante regresión L1 eliminando los coeficientes que vayan a 0.
-         * 2: Mediante f-test.
-       Cualquier otro valor hará que no se haga selección de variables."""
+       se controla mediante el parámetro 'selecion_strategy'."""
 
-    # Selección con PCA
+    # Reducción de dimensionalidad
     if selection_strategy == 0:
         preproc = [
             ("selection", PCA(0.95)),
             ("poly", PolynomialFeatures(2)),
-            ("standardize2", StandardScaler())]
+            ("standardize", StandardScaler())]
 
-    # Selección con Lasso
-    elif selection_strategy == 1:
-        preproc = [
-            ("var", VarianceThreshold(0.1)),
-            ("standardize", StandardScaler()),
-            ("selection", SelectFromModel(Lasso(alpha = 0.01), threshold = 0.01)),
-            ("poly", PolynomialFeatures(2)),
-            ("standardize2", StandardScaler())]
-
-    # Selección con información mutua
-    elif selection_strategy == 2:
-        preproc = [
-            ("var", VarianceThreshold(0.1)),
-            ("standardize", StandardScaler()),
-            ("selection", SelectKBest(f_classif, k = 45)),
-            ("poly", PolynomialFeatures(2)),
-            ("standardize2", StandardScaler())]
-
-    # Sin preprocesamiento
+    # Selección de variables
     else:
         preproc = [
-            ("var", VarianceThreshold(0.1)),
             ("poly", PolynomialFeatures(2)),
-            ("standardize2", StandardScaler())]
+            ("var", VarianceThreshold(0.1)),
+            ("standardize", StandardScaler())]
 
     return preproc
 
@@ -111,8 +89,10 @@ def classification_fit(compare_nonlinear = False, selection_strategy = 0, show =
        Opcionalmente se puede ajustar también un modelo no lineal (RandomForest)
        para comparar el rendimiento.
          - compare_nonlinear: controla si se ajusta un modelo no lineal.
-         - selection_strategy: estrategia de selección de características (ver
-           función 'preprocess_pipeline').
+         - selection_strategy: estrategia de selección de características
+             * 0: Mediante PCA.
+             * 1: Mediante regresión L1 eliminando los coeficientes que vayan a 0.
+             * 2: Mediante f-test.
          - show: controla si se muestran gráficas."""
 
     # Cargamos los datos de entrenamiento y test
@@ -129,10 +109,17 @@ def classification_fit(compare_nonlinear = False, selection_strategy = 0, show =
     X_train = preproc_pipe.fit_transform(X_train, y_train)
     X_test = preproc_pipe.transform(X_test)
     print("Hecho.")
-    print(X_train.shape, X_test.shape)
 
-    # Construimos un pipeline de clasificación
-    pipe = Pipeline([("clf", LogisticRegression())])
+    # Construimos un pipeline de selección + clasificación
+    pipe_lst = []
+    if selection_strategy == 1:
+        pipe_lst += [("var2", VarianceThreshold()),
+                     ("selection", SelectFromModel(Lasso(max_iter = 1100, alpha = 0.01),
+                        threshold = 0.001))]
+    elif selection_strategy == 2:
+        pipe_lst += [("var2", VarianceThreshold()),
+                     ("selection", SelectKBest(f_classif, k = X_train.shape[1] // 3))]
+    pipe = Pipeline(pipe_lst + [("clf", LogisticRegression())])
 
     # Elegimos los modelos lineales y sus parámetros para CV
     search_space = [
@@ -147,7 +134,7 @@ def classification_fit(compare_nonlinear = False, selection_strategy = 0, show =
     print("Realizando selección de modelos lineales... ", end = "")
     start = default_timer()
     best_clf = GridSearchCV(pipe, search_space, scoring = 'accuracy',
-            cv = 5, n_jobs = -1, verbose = 1)
+            cv = 5, n_jobs = -1)
     best_clf.fit(X_train, y_train)
     elapsed = default_timer() - start
     print("Hecho.\n")
@@ -155,6 +142,8 @@ def classification_fit(compare_nonlinear = False, selection_strategy = 0, show =
     # Mostramos los resultados
     print("--- Mejor clasificador lineal ---")
     print("Parámetros:\n{}".format(best_clf.best_params_['clf']))
+    print("Número de variables usadas: {}".format(
+        best_clf.best_estimator_['clf'].coef_.shape[1]))
     print("Accuracy en CV: {:.3f}%".format(100.0 * best_clf.best_score_))
     print("Accuracy en training: {:.3f}%".format(
         100.0 * best_clf.score(X_train, y_train)))
@@ -186,7 +175,9 @@ def classification_fit(compare_nonlinear = False, selection_strategy = 0, show =
 
         # Mostramos los resultados
         print("--- Mejor clasificador no lineal ---")
-        print("Parámetros:\n{}".format(nonlinear_best_clf.best_params_))
+        print("Parámetros:\n{}".format(nonlinear_best_clf.best_params_['clf']))
+        print("Número de variables usadas: {}".format(
+            nonlinear_best_clf.best_estimator_['clf'].coef_.shape[1]))
         print("Accuracy en CV: {:.3f}%".format(100.0 * nonlinear_best_clf.best_score_))
         print("Accuracy en training: {:.3f}%".format(
             100.0 * nonlinear_best_clf.score(X_train, y_train)))
@@ -209,7 +200,7 @@ def main():
 
     print("-------- AJUSTE DE MODELOS LINEALES --------")
     print("--- PARTE 1: CLASIFICACIÓN ---")
-    classification_fit(selection_strategy = 2, show = False)
+    classification_fit(selection_strategy = 0, show = False)
 
 if __name__ == "__main__":
     main()
