@@ -22,6 +22,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from timeit import default_timer
 
+from sklearn.dummy import DummyClassifier
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import (SelectFromModel, VarianceThreshold, SelectKBest,
@@ -84,10 +85,10 @@ def preprocess_pipeline(selection_strategy = 0):
 
     return preproc
 
-def classification_fit(compare_nonlinear = False, selection_strategy = 0, show = True):
+def classification_fit(compare = False, selection_strategy = 0, show = True):
     """Ajuste de un modelo lineal para resolver un problema de clasificación.
        Opcionalmente se puede ajustar también un modelo no lineal (RandomForest)
-       para comparar el rendimiento.
+       y un clasificador aleatorio para comparar el rendimiento.
          - compare_nonlinear: controla si se ajusta un modelo no lineal.
          - selection_strategy: estrategia de selección de características
              * 0: Mediante PCA.
@@ -98,17 +99,17 @@ def classification_fit(compare_nonlinear = False, selection_strategy = 0, show =
     # Cargamos los datos de entrenamiento y test
     print("Cargando datos de entrenamiento y test... ", end = "")
     start = default_timer()
-    X_train, y_train = read_data(PATH + "optdigits.tra")
-    X_test, y_test = read_data(PATH + "optdigits.tes")
+    X_train_pre, y_train = read_data(PATH + "optdigits.tra")
+    X_test_pre, y_test = read_data(PATH + "optdigits.tes")
     print("Hecho.")
 
     # Preprocesamos los datos
     print("Preprocesando datos... ", end = "")
     preproc = preprocess_pipeline(selection_strategy)
     preproc_pipe = Pipeline(preproc)
-    X_train = preproc_pipe.fit_transform(X_train, y_train)
-    X_test = preproc_pipe.transform(X_test)
-    print("Hecho.")
+    X_train = preproc_pipe.fit_transform(X_train_pre, y_train)
+    X_test = preproc_pipe.transform(X_test_pre)
+    print("Hecho.\n")
 
     # Construimos un pipeline de selección + clasificación
     pipe_lst = []
@@ -156,33 +157,48 @@ def classification_fit(compare_nonlinear = False, selection_strategy = 0, show =
         plt.show()
         wait()
 
-    if compare_nonlinear:
+    if compare:
 
-        # Elegimos un modelo no lineal y sus parámetros para CV
-        nonlinear_search_space = [
-            {"clf": [RandomForestClassifier(random_state = SEED)],
-             "clf__n_estimators": [100, 200],
-             "clf__max_depth": [30, None]}]
+        # Elegimos un modelo no lineal
+        n_trees = 200
+        nonlinear_clf = Pipeline([
+            ("var", VarianceThreshold(0.1)),
+            ("clf", RandomForestClassifier(n_estimators = n_trees, random_state = SEED))])
 
-        # Buscamos los mejores parámetros por CV
-        print("\nRealizando selección de modelos no lineales... ", end = "")
+        # Ajustamos el modelo
+        print("\nAjustando modelo no lineal... ", end = "")
         start = default_timer()
-        nonlinear_best_clf = GridSearchCV(pipe, nonlinear_search_space,
-            scoring = 'accuracy', cv = 5, n_jobs = -1)
-        nonlinear_best_clf.fit(X_train, y_train)
+        nonlinear_clf.fit(X_train_pre, y_train)
         elapsed = default_timer() - start
         print("Hecho.\n")
 
         # Mostramos los resultados
-        print("--- Mejor clasificador no lineal ---")
-        print("Parámetros:\n{}".format(nonlinear_best_clf.best_params_['clf']))
-        print("Número de variables usadas: {}".format(
-            nonlinear_best_clf.best_estimator_['clf'].coef_.shape[1]))
-        print("Accuracy en CV: {:.3f}%".format(100.0 * nonlinear_best_clf.best_score_))
+        print("--- Clasificador no lineal (RandomForest) ---")
+        print("Número de árboles: {}".format(n_trees))
+        print("Número de variables usadas: {}".format(X_train_pre.shape[1]))
         print("Accuracy en training: {:.3f}%".format(
-            100.0 * nonlinear_best_clf.score(X_train, y_train)))
+            100.0 * nonlinear_clf.score(X_train_pre, y_train)))
         print("Accuracy en test: {:.3f}%".format(
-            100.0 * nonlinear_best_clf.score(X_test, y_test)))
+            100.0 * nonlinear_clf.score(X_test_pre, y_test)))
+        print("Tiempo: {:.3f}s".format(elapsed))
+
+        # Elegimos un clasificador aleatorio
+        dummy_clf = DummyClassifier(strategy = 'stratified', random_state = SEED)
+
+        # Ajustamos el modelo
+        print("\nAjustando clasificador aleatorio... ", end = "")
+        start = default_timer()
+        dummy_clf.fit(X_train_pre, y_train)
+        elapsed = default_timer() - start
+        print("Hecho.\n")
+
+        # Mostramos los resultados
+        print("--- Clasificador aleatorio ---")
+        print("Número de variables usadas: {}".format(X_train_pre.shape[1]))
+        print("Accuracy en training: {:.3f}%".format(
+            100.0 * dummy_clf.score(X_train_pre, y_train)))
+        print("Accuracy en test: {:.3f}%".format(
+            100.0 * dummy_clf.score(X_test_pre, y_test)))
         print("Tiempo: {:.3f}s".format(elapsed))
 
 #
@@ -200,7 +216,7 @@ def main():
 
     print("-------- AJUSTE DE MODELOS LINEALES --------")
     print("--- PARTE 1: CLASIFICACIÓN ---")
-    classification_fit(selection_strategy = 0, show = False)
+    classification_fit(compare = True, selection_strategy = 0, show = False)
 
 if __name__ == "__main__":
     main()
