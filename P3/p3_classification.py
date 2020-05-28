@@ -137,12 +137,17 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
     pipe = Pipeline(pipe_lst + [("clf", LogisticRegression())])
 
     # Elegimos los modelos lineales y sus parámetros para CV
+    max_iter = 500
     search_space = [
-        {"clf": [LogisticRegression(multi_class = 'ovr', penalty = 'l2', max_iter = 500)],
+        {"clf": [LogisticRegression(multi_class = 'ovr',
+                                    penalty = 'l2',
+                                    max_iter = max_iter)],
          "clf__C": np.logspace(-4, 4, 3)},
-        {"clf": [RidgeClassifier(random_state = SEED)],
+        {"clf": [RidgeClassifier(random_state = SEED,
+                                 max_iter = max_iter)],
          "clf__alpha": np.logspace(-4, 4, 3)},
-        {"clf": [Perceptron(random_state = SEED)]}]
+        {"clf": [Perceptron(random_state = SEED,
+                            max_iter = max_iter)]}]
 
     # Buscamos los mejores parámetros por CV
     print("Realizando selección de modelos lineales... ", end = "")
