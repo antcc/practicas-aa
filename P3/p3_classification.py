@@ -25,10 +25,9 @@ from enum import Enum
 from sklearn.dummy import DummyClassifier
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.decomposition import PCA
-from sklearn.feature_selection import (SelectFromModel, VarianceThreshold, SelectKBest,
-    f_classif)
+from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif
 from sklearn.model_selection import GridSearchCV
-from sklearn.linear_model import Lasso, LogisticRegression, SGDClassifier, RidgeClassifier
+from sklearn.linear_model import LogisticRegression, RidgeClassifier, Perceptron
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 
@@ -52,9 +51,8 @@ IMG_PATH = "img/classification/"
 class Selection(Enum):
     """Estrategia de selección de características."""
     PCA = 0
-    LASSO = 1
-    ANOVA = 2
-    NONE = 3
+    ANOVA = 1
+    NONE = 2
 
 def print_evaluation_metrics(clf, X_train, X_test, y_train, y_test):
     """Imprime la evaluación de resultados en training y test de un clasificador."""
@@ -101,8 +99,7 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
          - compare: controla si se realizan comparaciones con otros clasificadores.
          - selection_strategy: estrategia de selección de características
              * 0: Mediante PCA.
-             * 1: Mediante regresión L1 eliminando los coeficientes que vayan a 0.
-             * 2: Mediante f-test (ANOVA).
+             * 1: Mediante f-test (ANOVA).
            Cualquier otro número hace que no se realice selección de características.
          - show: controla si se muestran gráficas informativas, a varios niveles
              * 0: No se muestran.
@@ -134,10 +131,7 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
 
     # Construimos un pipeline de selección + clasificación
     pipe_lst = []
-    if selection_strategy == Selection.LASSO:
-        pipe_lst += [("var2", VarianceThreshold()),
-                     ("selection", SelectFromModel(Lasso(alpha = 0.005), threshold = 0.01))]
-    elif selection_strategy == Selection.ANOVA:
+    if selection_strategy == Selection.ANOVA:
         pipe_lst += [("var2", VarianceThreshold()),
                      ("selection", SelectKBest(f_classif, k = X_train.shape[1] // 3))]
     pipe = Pipeline(pipe_lst + [("clf", LogisticRegression())])
@@ -146,10 +140,9 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
     search_space = [
         {"clf": [LogisticRegression(multi_class = 'ovr', penalty = 'l2', max_iter = 500)],
          "clf__C": np.logspace(-4, 4, 3)},
-        {"clf": [SGDClassifier(loss = 'hinge', random_state = SEED)],
-         "clf__alpha": np.logspace(-4, 4, 3)},
         {"clf": [RidgeClassifier(random_state = SEED)],
-         "clf__alpha": np.logspace(-4, 4, 3)}]
+         "clf__alpha": np.logspace(-4, 4, 3)},
+        {"clf": [Perceptron(random_state = SEED)]}]
 
     # Buscamos los mejores parámetros por CV
     print("Realizando selección de modelos lineales... ", end = "")
@@ -176,7 +169,7 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
         # Matriz de confusión
         confusion_matrix(best_clf, X_test, y_test, SAVE_FIGURES, IMG_PATH)
 
-        if show > 1 and selection_strategy is not Selection.LASSO:
+        if show > 1:
             # Curva de aprendizaje
             print("Calculando curva de aprendizaje...")
             plot_learning_curve(best_clf, X_train, y_train, n_jobs = -1,
