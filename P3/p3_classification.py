@@ -31,7 +31,7 @@ from sklearn.linear_model import LogisticRegression, RidgeClassifier, Perceptron
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 
-from p3_visualization import (scatter_pca, scatter_pca_classes, confusion_matrix,
+from p3_visualization import (wait, scatter_pca, scatter_pca_classes, confusion_matrix,
     plot_feature_importance, plot_learning_curve, plot_class_distribution, plot_corr_matrix)
 
 #
@@ -175,9 +175,11 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
     print_evaluation_metrics(best_clf, X_train, X_test, y_train, y_test)
     print("Tiempo: {:.3f}s".format(elapsed))
 
+    wait()
+
     # Gráficas y visualización
     if show > 0:
-        print("\nMostrando gráficas sobre entrenamiento y predicción...")
+        print("Mostrando gráficas sobre entrenamiento y predicción...")
 
         # Matriz de confusión
         confusion_matrix(best_clf, X_test, y_test, SAVE_FIGURES, IMG_PATH)
@@ -201,8 +203,8 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
         if show > 1:
             # Curva de aprendizaje
             print("Calculando curva de aprendizaje...")
-            plot_learning_curve(best_clf, X_train, y_train, n_jobs = -1,
-                cv = 5, save_figures = SAVE_FIGURES, img_path = IMG_PATH)
+            plot_learning_curve(best_clf, X_train, y_train, n_jobs = -1, cv = 5,
+                scoring = 'accuracy', save_figures = SAVE_FIGURES, img_path = IMG_PATH)
 
     # Comparación con modelos no lineales
     if compare:
@@ -214,7 +216,7 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
                 max_depth = 32, random_state = SEED))])
 
         # Ajustamos el modelo
-        print("\nAjustando modelo no lineal... ", end = "")
+        print("Ajustando modelo no lineal... ", end = "")
         start = default_timer()
         nonlinear_clf.fit(X_train_raw, y_train)
         elapsed = default_timer() - start
