@@ -46,7 +46,7 @@ SAVE_FIGURES = False
 IMG_PATH = "img/classification/"
 
 #
-# PROBLEMA DE CLASIFICACIÓN EN OPTDIGITS
+# PROBLEMA DE CLASIFICACIÓN
 #
 
 class Selection(Enum):
@@ -55,6 +55,13 @@ class Selection(Enum):
     LASSO = 1
     ANOVA = 2
     NONE = 3
+
+def print_evaluation_metrics(clf, X_train, X_test, y_train, y_test):
+    """Imprime la evaluación de resultados en training y test de un clasificador."""
+
+    for name, X, y in [("training", X_train, y_train), ("test", X_test, y_test)]:
+        print("Accuracy en {}: {:.3f}%".format(
+            name, 100.0 * clf.score(X, y)))
 
 def read_data(filename):
     """Lee los datos de dichero y los separa en características y etiquetas."""
@@ -104,7 +111,6 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
 
     # Cargamos los datos de entrenamiento y test
     print("Cargando datos de entrenamiento y test... ", end = "")
-    start = default_timer()
     X_train_raw, y_train = read_data(PATH + "optdigits.tra")
     X_test_raw, y_test = read_data(PATH + "optdigits.tes")
     print("Hecho.")
@@ -160,10 +166,7 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
     print("Número de variables usadas: {}".format(
         best_clf.best_estimator_['clf'].coef_.shape[1]))
     print("Accuracy en CV: {:.3f}%".format(100.0 * best_clf.best_score_))
-    print("Accuracy en training: {:.3f}%".format(
-        100.0 * best_clf.score(X_train, y_train)))
-    print("Accuracy en test: {:.3f}%".format(
-        100.0 * best_clf.score(X_test, y_test)))
+    print_evaluation_metrics(best_clf, X_train, X_test, y_train, y_test)
     print("Tiempo: {:.3f}s".format(elapsed))
 
     # Gráficas y visualización
@@ -221,10 +224,7 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
         print("--- Clasificador no lineal (RandomForest) ---")
         print("Número de árboles: {}".format(n_trees))
         print("Número de variables usadas: {}".format(X_train_raw.shape[1]))
-        print("Accuracy en training: {:.3f}%".format(
-            100.0 * nonlinear_clf.score(X_train_raw, y_train)))
-        print("Accuracy en test: {:.3f}%".format(
-            100.0 * nonlinear_clf.score(X_test_raw, y_test)))
+        print_evaluation_metrics(nonlinear_clf, X_train_raw, X_test_raw, y_train, y_test)
         print("Tiempo: {:.3f}s".format(elapsed))
 
         # Elegimos un clasificador aleatorio
@@ -240,10 +240,7 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
         # Mostramos los resultados
         print("--- Clasificador aleatorio ---")
         print("Número de variables usadas: {}".format(X_train_raw.shape[1]))
-        print("Accuracy en training: {:.3f}%".format(
-            100.0 * dummy_clf.score(X_train_raw, y_train)))
-        print("Accuracy en test: {:.3f}%".format(
-            100.0 * dummy_clf.score(X_test_raw, y_test)))
+        print_evaluation_metrics(dummy_clf, X_train_raw, X_test_raw, y_train, y_test)
         print("Tiempo: {:.3f}s".format(elapsed))
 
 #
