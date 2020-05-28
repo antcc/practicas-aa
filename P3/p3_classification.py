@@ -136,12 +136,13 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
         # Mostramos matriz de correlación de training antes y después de preprocesado
         plot_corr_matrix(X_train_raw, X_train, SAVE_FIGURES, IMG_PATH)
 
-        # Importancia de características
-        pipe = Pipeline(pipe_lst + [("clf", RandomForestClassifier(random_state = SEED))])
-        pipe.fit(X_train, y_train)
-        importances = pipe['clf'].feature_importances_
-        plot_feature_importance(importances, 10, selection_strategy == Selection.PCA,
-            SAVE_FIGURES, IMG_PATH)
+        if show > 1:
+            # Importancia de características
+            pipe = Pipeline(pipe_lst + [("clf", RandomForestClassifier(random_state = SEED))])
+            pipe.fit(X_train, y_train)
+            importances = pipe['clf'].feature_importances_
+            plot_feature_importance(importances, 10, selection_strategy == Selection.PCA,
+                SAVE_FIGURES, IMG_PATH)
 
     # Elegimos los modelos lineales y sus parámetros para CV
     max_iter = 500
@@ -201,7 +202,7 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
             # Curva de aprendizaje
             print("Calculando curva de aprendizaje...")
             plot_learning_curve(best_clf, X_train, y_train, n_jobs = -1,
-                save_figures = SAVE_FIGURES, img_path = IMG_PATH)
+                cv = 5, save_figures = SAVE_FIGURES, img_path = IMG_PATH)
 
     # Comparación con modelos no lineales
     if compare:
