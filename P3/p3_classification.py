@@ -120,8 +120,15 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
     X_test = preproc_pipe.transform(X_test_raw)
     print("Hecho.")
 
+    # Construimos un pipeline de selección + clasificación
+    pipe_lst = []
+    if selection_strategy == Selection.ANOVA:
+        pipe_lst += [("var2", VarianceThreshold()),
+                     ("selection", SelectKBest(f_classif, k = X_train.shape[1] // 3))]
+    pipe = Pipeline(pipe_lst + [("clf", LogisticRegression())])
+
     if show > 0:
-        print("\nMostrando gráficas sobre preprocesado...")
+        print("\nMostrando gráficas sobre preprocesado y características...")
 
         # Mostramos distribución de clases en training y test
         plot_class_distribution(y_train, y_test, N_CLASSES, SAVE_FIGURES, IMG_PATH)
@@ -129,12 +136,12 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
         # Mostramos matriz de correlación de training antes y después de preprocesado
         plot_corr_matrix(X_train_raw, X_train, SAVE_FIGURES, IMG_PATH)
 
-    # Construimos un pipeline de selección + clasificación
-    pipe_lst = []
-    if selection_strategy == Selection.ANOVA:
-        pipe_lst += [("var2", VarianceThreshold()),
-                     ("selection", SelectKBest(f_classif, k = X_train.shape[1] // 3))]
-    pipe = Pipeline(pipe_lst + [("clf", LogisticRegression())])
+        # Importancia de características
+        pipe = Pipeline(pipe_lst + [("clf", RandomForestClassifier(random_state = SEED))])
+        pipe.fit(X_train, y_train)
+        importances = pipe['clf'].feature_importances_
+        plot_feature_importance(importances, 10, selection_strategy == Selection.PCA,
+            SAVE_FIGURES, IMG_PATH)
 
     # Elegimos los modelos lineales y sus parámetros para CV
     max_iter = 500
@@ -174,19 +181,6 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
         # Matriz de confusión
         confusion_matrix(best_clf, X_test, y_test, SAVE_FIGURES, IMG_PATH)
 
-        if show > 1:
-            # Curva de aprendizaje
-            print("Calculando curva de aprendizaje...")
-            plot_learning_curve(best_clf, X_train, y_train, n_jobs = -1,
-                save_figures = SAVE_FIGURES, img_path = IMG_PATH)
-
-        # Importancia de características
-        pipe = Pipeline(pipe_lst + [("clf", RandomForestClassifier(random_state = SEED))])
-        pipe.fit(X_train, y_train)
-        importances = pipe['clf'].feature_importances_
-        plot_feature_importance(importances, 10, selection_strategy == Selection.PCA,
-            SAVE_FIGURES, IMG_PATH)
-
         # Visualización de componentes principales
         if selection_strategy == Selection.PCA:
             # Predicciones para el conjunto de test
@@ -202,6 +196,12 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
             coef = best_clf.best_estimator_['clf'].coef_
             ws = [[coef[i, 0], coef[i, 1]] for i in classes]
             scatter_pca_classes(X_test, y_test, ws, classes, SAVE_FIGURES, IMG_PATH)
+
+        if show > 1:
+            # Curva de aprendizaje
+            print("Calculando curva de aprendizaje...")
+            plot_learning_curve(best_clf, X_train, y_train, n_jobs = -1,
+                save_figures = SAVE_FIGURES, img_path = IMG_PATH)
 
     # Comparación con modelos no lineales
     if compare:
