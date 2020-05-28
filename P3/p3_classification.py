@@ -211,7 +211,8 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
         n_trees = 200
         nonlinear_clf = Pipeline([
             ("var", VarianceThreshold(0.1)),
-            ("clf", RandomForestClassifier(n_estimators = n_trees, random_state = SEED))])
+            ("clf", RandomForestClassifier(n_estimators = n_trees,
+                max_depth = 32, random_state = SEED))])
 
         # Ajustamos el modelo
         print("\nAjustando modelo no lineal... ", end = "")
