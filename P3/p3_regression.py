@@ -31,6 +31,7 @@ from sklearn.linear_model import Lasso, SGDRegressor, LinearRegression, Ridge
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.impute import SimpleImputer
 
 from p3_visualization import (plot_feature_importance, plot_learning_curve,
     plot_corr_matrix, plot_features, plot_hist_dependent, plot_scatter_pca_reg,
@@ -72,17 +73,19 @@ def load_and_split_data(filename, test_size = 0.2):
     # Eliminamos columnas con más de la mitad de valores perdidos
     df = df[df.columns[df.isna().mean() <= 0.5]]
 
-    # Imputamos valores perdidos en las columnas con la mediana
-    columns_na = df.columns[df.isna().sum() > 0]
-    for col in columns_na:
-        median = df[col].median()
-        df[col].fillna(median, inplace = True)
-
-    X = np.array(df.iloc[:, :-1])
-    y = np.array(df.iloc[:, -1])
+    X = df.iloc[:, :-1].to_numpy()
+    y = df.iloc[:, -1].to_numpy()
 
     # Realizamos división en training y test
-    return train_test_split(X, y, test_size = test_size, random_state = SEED)
+    X_train, X_test, y_train, y_test = \
+        train_test_split(X, y, test_size = test_size, random_state = SEED)
+
+    # Imputamos el resto de valores perdidos con la mediana
+    imputer = SimpleImputer(missing_values = np.nan, strategy = 'median')
+    X_train = imputer.fit_transform(X_train)
+    X_test = imputer.fit_transform(X_test)
+
+    return X_train, X_test, y_train, y_test
 
 def preprocess_pipeline():
     """Construye una lista de transformaciones para el
@@ -109,8 +112,8 @@ def regression_fit(compare = False, show = 0):
              * >=2: Se muestran todas."""
 
     # Cargamos los datos de entrenamiento y test
-    print("Cargando datos de entrenamiento y test... ", end = "")
-    X_train_raw, X_test_raw, y_train, y_test = \
+    print("Cargando datos de entrenamiento y test... ", end = "", flush = True)
+    X_train, X_test, y_train, y_test = \
         load_and_split_data(PATH + "communities.data")
     print("Hecho.")
 
@@ -120,31 +123,31 @@ def regression_fit(compare = False, show = 0):
         # Visualizamos las variables más relevantes
         names = ["PctYoungKids2Par", "MalePctNevMarr"]
         features = [50, 44]
-        plot_features(features, names, X_train_raw, y_train, SAVE_FIGURES, IMG_PATH)
+        plot_features(features, names, X_train, y_train, SAVE_FIGURES, IMG_PATH)
 
         # Mostramos histograma de la variable dependiente
         plot_hist_dependent(y_train, SAVE_FIGURES, IMG_PATH)
 
-    # Preprocesamos los datos
-    print("Preprocesando datos... ", end = "")
+    # Creamos un pipeline de preprocesado
     preproc = preprocess_pipeline()
     preproc_pipe = Pipeline(preproc)
-    X_train = preproc_pipe.fit_transform(X_train_raw, y_train)
-    X_test = preproc_pipe.transform(X_test_raw)
-    print("Hecho.")
 
-    # Construimos un pipeline de regresión
-    pipe = Pipeline([("reg", LinearRegression())])
+    # Obtenemos los datos preprocesados por si los necesitamos
+    X_train_pre = preproc_pipe.fit_transform(X_train, y_train)
+    X_test_pre = preproc_pipe.transform(X_test)
+
+    # Construimos un pipeline de preprocesado + regresión
+    pipe = Pipeline(preproc + [("reg", LinearRegression())])
 
     if show > 0:
         print("Mostrando gráficas sobre preprocesado y características...")
 
         # Mostramos matriz de correlación de training antes y después de preprocesado
-        plot_corr_matrix(X_train_raw, X_train, SAVE_FIGURES, IMG_PATH)
+        plot_corr_matrix(X_train, X_train_pre, SAVE_FIGURES, IMG_PATH)
 
         if show > 1:
             # Importancia de características
-            pipe = Pipeline([("reg", RandomForestRegressor(random_state = SEED))])
+            pipe = Pipeline(preproc + [("reg", RandomForestRegressor(random_state = SEED))])
             pipe.fit(X_train, y_train)
             importances = pipe['reg'].feature_importances_
             plot_feature_importance(importances, 10, True, SAVE_FIGURES, IMG_PATH)
@@ -164,7 +167,7 @@ def regression_fit(compare = False, show = 0):
          "reg__alpha": np.logspace(-4, 4, 10)}]
 
     # Buscamos los mejores parámetros por CV
-    print("Realizando selección de modelos lineales... ", end = "")
+    print("Realizando selección de modelos lineales... ", end = "", flush = True)
     start = default_timer()
     best_reg = GridSearchCV(pipe, search_space, scoring = 'neg_mean_squared_error',
         cv = 5, n_jobs = -1)
@@ -181,10 +184,9 @@ def regression_fit(compare = False, show = 0):
     print_evaluation_metrics(best_reg, X_train, X_test, y_train, y_test)
     print("Tiempo: {:.3f}s".format(elapsed))
 
-    wait()
-
     # Gráficas y visualización
     if show > 0:
+        wait()
         print("Mostrando gráficas sobre entrenamiento y predicción...")
 
         # Visualización de residuos y error de predicción
@@ -194,7 +196,7 @@ def regression_fit(compare = False, show = 0):
         # Visualización de componentes principales
         m = best_reg.best_estimator_['reg'].coef_[0]
         b = best_reg.best_estimator_['reg'].intercept_
-        plot_scatter_pca_reg(X_test[:, 0], y_test, m, b, SAVE_FIGURES, IMG_PATH)
+        plot_scatter_pca_reg(X_test_pre[:, 0], y_test, m, b, SAVE_FIGURES, IMG_PATH)
 
         if show > 1:
             # Curva de aprendizaje
@@ -202,6 +204,8 @@ def regression_fit(compare = False, show = 0):
             plot_learning_curve(best_reg, X_train, y_train, n_jobs = -1,
                 cv = 5, scoring = 'neg_mean_squared_error',
                 save_figures = SAVE_FIGURES, img_path = IMG_PATH)
+            elapsed = default_timer() - start
+            print("Tiempo: {:.3f}s".format(elapsed))
 
     # Comparación con modelos no lineales
     if compare:
@@ -213,33 +217,33 @@ def regression_fit(compare = False, show = 0):
                 max_depth = 10, random_state = SEED))])
 
         # Ajustamos el modelo
-        print("Ajustando modelo no lineal... ", end = "")
+        print("\nAjustando modelo no lineal... ", end = "", flush = True)
         start = default_timer()
-        nonlinear_reg.fit(X_train_raw, y_train)
+        nonlinear_reg.fit(X_train, y_train)
         elapsed = default_timer() - start
         print("Hecho.\n")
 
         # Mostramos los resultados
         print("--- Regresor no lineal (RandomForest) ---")
         print("Número de árboles: {}".format(n_trees))
-        print("Número de variables usadas: {}".format(X_train_raw.shape[1]))
-        print_evaluation_metrics(nonlinear_reg, X_train_raw, X_test_raw, y_train, y_test)
+        print("Número de variables usadas: {}".format(X_train.shape[1]))
+        print_evaluation_metrics(nonlinear_reg, X_train, X_test, y_train, y_test)
         print("Tiempo: {:.3f}s".format(elapsed))
 
         # Elegimos un regresor aleatorio
         dummy_reg = DummyRegressor(strategy = 'mean')
 
         # Ajustamos el modelo
-        print("\nAjustando regresor aleatorio... ", end = "")
+        print("\nAjustando regresor aleatorio... ", end = "", flush = True)
         start = default_timer()
-        dummy_reg.fit(X_train_raw, y_train)
+        dummy_reg.fit(X_train, y_train)
         elapsed = default_timer() - start
         print("Hecho.\n")
 
         # Mostramos los resultados
         print("--- Regresor aleatorio ---")
-        print("Número de variables usadas: {}".format(X_train_raw.shape[1]))
-        print_evaluation_metrics(dummy_reg, X_train_raw, X_test_raw, y_train, y_test)
+        print("Número de variables usadas: {}".format(X_train.shape[1]))
+        print_evaluation_metrics(dummy_reg, X_train, X_test, y_train, y_test)
         print("Tiempo: {:.3f}s".format(elapsed))
 
 #

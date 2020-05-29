@@ -107,25 +107,24 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
              * >=2: Se muestran todas."""
 
     # Cargamos los datos de entrenamiento y test
-    print("Cargando datos de entrenamiento y test... ", end = "")
-    X_train_raw, y_train = read_data(PATH + "optdigits.tra")
-    X_test_raw, y_test = read_data(PATH + "optdigits.tes")
+    print("Cargando datos de entrenamiento y test... ", end = "", flush = True)
+    X_train, y_train = read_data(PATH + "optdigits.tra")
+    X_test, y_test = read_data(PATH + "optdigits.tes")
     print("Hecho.")
 
-    # Preprocesamos los datos
-    print("Preprocesando datos... ", end = "")
+    # Construimos pipeline para preprocesado
     preproc = preprocess_pipeline(selection_strategy)
     preproc_pipe = Pipeline(preproc)
-    X_train = preproc_pipe.fit_transform(X_train_raw, y_train)
-    X_test = preproc_pipe.transform(X_test_raw)
-    print("Hecho.")
 
-    # Construimos un pipeline de selección + clasificación
-    pipe_lst = []
+    # Obtenemos los datos preprocesados por si los necesitamos
+    X_train_pre = preproc_pipe.fit_transform(X_train, y_train)
+    X_test_pre = preproc_pipe.transform(X_test)
+
+    # Construimos un pipeline de preprocesado + clasificación
     if selection_strategy == Selection.ANOVA:
-        pipe_lst += [("var2", VarianceThreshold()),
-                     ("selection", SelectKBest(f_classif, k = X_train.shape[1] // 3))]
-    pipe = Pipeline(pipe_lst + [("clf", LogisticRegression())])
+        preproc += [("var2", VarianceThreshold()),
+                    ("selection", SelectKBest(f_classif, k = X_train_pre.shape[1] // 3))]
+    pipe = Pipeline(preproc + [("clf", LogisticRegression())])
 
     if show > 0:
         print("\nMostrando gráficas sobre preprocesado y características...")
@@ -134,13 +133,14 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
         plot_class_distribution(y_train, y_test, N_CLASSES, SAVE_FIGURES, IMG_PATH)
 
         # Mostramos matriz de correlación de training antes y después de preprocesado
-        plot_corr_matrix(X_train_raw, X_train, SAVE_FIGURES, IMG_PATH)
+        plot_corr_matrix(X_train, X_train_pre, SAVE_FIGURES, IMG_PATH)
 
         if show > 1:
             # Importancia de características
-            pipe = Pipeline(pipe_lst + [("clf", RandomForestClassifier(random_state = SEED))])
-            pipe.fit(X_train, y_train)
-            importances = pipe['clf'].feature_importances_
+            pipe_rf = Pipeline(preproc
+                + [("clf", RandomForestClassifier(random_state = SEED))])
+            pipe_rf.fit(X_train, y_train)
+            importances = pipe_rf['clf'].feature_importances_
             plot_feature_importance(importances, 10, selection_strategy == Selection.PCA,
                 SAVE_FIGURES, IMG_PATH)
 
@@ -154,11 +154,13 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
         {"clf": [RidgeClassifier(random_state = SEED,
                                  max_iter = max_iter)],
          "clf__alpha": np.logspace(-4, 4, 3)},
-        {"clf": [Perceptron(random_state = SEED,
-                            max_iter = max_iter)]}]
+        {"clf": [Perceptron(penalty = 'l2',
+                            random_state = SEED,
+                            max_iter = max_iter)],
+         "clf__alpha": np.logspace(-4, 4, 3)}]
 
     # Buscamos los mejores parámetros por CV
-    print("Realizando selección de modelos lineales... ", end = "")
+    print("Realizando selección de modelos lineales... ", end = "", flush = True)
     start = default_timer()
     best_clf = GridSearchCV(pipe, search_space, scoring = 'accuracy',
             cv = 5, n_jobs = -1)
@@ -175,10 +177,9 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
     print_evaluation_metrics(best_clf, X_train, X_test, y_train, y_test)
     print("Tiempo: {:.3f}s".format(elapsed))
 
-    wait()
-
     # Gráficas y visualización
     if show > 0:
+        wait()
         print("Mostrando gráficas sobre entrenamiento y predicción...")
 
         # Matriz de confusión
@@ -191,20 +192,23 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
 
             # Proyección de las dos primeras componentes principales
             # con etiquetas predichas
-            scatter_pca(X_test, y_pred, SAVE_FIGURES, IMG_PATH)
+            scatter_pca(X_test_pre, y_pred, SAVE_FIGURES, IMG_PATH)
 
             # Seleccionamos dos clases concretas y mostramos también los clasificadores,
             # frente a las etiquetas reales
             classes = [1, 2, 3]
             coef = best_clf.best_estimator_['clf'].coef_
             ws = [[coef[i, 0], coef[i, 1]] for i in classes]
-            scatter_pca_classes(X_test, y_test, ws, classes, SAVE_FIGURES, IMG_PATH)
+            scatter_pca_classes(X_test_pre, y_test, ws, classes, SAVE_FIGURES, IMG_PATH)
 
         if show > 1:
             # Curva de aprendizaje
-            print("Calculando curva de aprendizaje...")
+            print("Calculando curva de aprendizaje... ")
+            start = default_timer()
             plot_learning_curve(best_clf, X_train, y_train, n_jobs = -1, cv = 5,
                 scoring = 'accuracy', save_figures = SAVE_FIGURES, img_path = IMG_PATH)
+            elapsed = default_timer() - start
+            print("Tiempo: {:.3f}s".format(elapsed))
 
     # Comparación con modelos no lineales
     if compare:
@@ -216,33 +220,33 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
                 max_depth = 32, random_state = SEED))])
 
         # Ajustamos el modelo
-        print("Ajustando modelo no lineal... ", end = "")
+        print("\nAjustando modelo no lineal... ", end = "", flush = True)
         start = default_timer()
-        nonlinear_clf.fit(X_train_raw, y_train)
+        nonlinear_clf.fit(X_train, y_train)
         elapsed = default_timer() - start
         print("Hecho.\n")
 
         # Mostramos los resultados
         print("--- Clasificador no lineal (RandomForest) ---")
         print("Número de árboles: {}".format(n_trees))
-        print("Número de variables usadas: {}".format(X_train_raw.shape[1]))
-        print_evaluation_metrics(nonlinear_clf, X_train_raw, X_test_raw, y_train, y_test)
+        print("Número de variables usadas: {}".format(X_train.shape[1]))
+        print_evaluation_metrics(nonlinear_clf, X_train, X_test, y_train, y_test)
         print("Tiempo: {:.3f}s".format(elapsed))
 
         # Elegimos un clasificador aleatorio
         dummy_clf = DummyClassifier(strategy = 'stratified', random_state = SEED)
 
         # Ajustamos el modelo
-        print("\nAjustando clasificador aleatorio... ", end = "")
+        print("\nAjustando clasificador aleatorio... ", end = "", flush = True)
         start = default_timer()
-        dummy_clf.fit(X_train_raw, y_train)
+        dummy_clf.fit(X_train, y_train)
         elapsed = default_timer() - start
         print("Hecho.\n")
 
         # Mostramos los resultados
         print("--- Clasificador aleatorio ---")
-        print("Número de variables usadas: {}".format(X_train_raw.shape[1]))
-        print_evaluation_metrics(dummy_clf, X_train_raw, X_test_raw, y_train, y_test)
+        print("Número de variables usadas: {}".format(X_train.shape[1]))
+        print_evaluation_metrics(dummy_clf, X_train, X_test, y_train, y_test)
         print("Tiempo: {:.3f}s".format(elapsed))
 
 #

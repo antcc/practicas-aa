@@ -402,6 +402,8 @@ def plot_features(features, names, X, y, save_figures = False, img_path = ""):
         b = reg.intercept_
         xx = np.array([x.min() - 0.1, x.max() + 0.1])
         axs[i].plot(xx, m * xx + b, color = 'k', ls = "--", lw = 2)
+        axs[i].text(-0.1, 0.99, "r = {:.3f}".format(np.corrcoef(x.T, y)[0, 1]),
+            fontsize = 11, bbox = dict(facecolor = 'k', alpha = 0.05))
 
     if save_figures:
         plt.savefig(img_path + "features_y.png")
