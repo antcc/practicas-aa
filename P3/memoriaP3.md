@@ -16,10 +16,11 @@ header-includes:
   - \usepackage{graphicx}
   - \usepackage{hyperref}
   - \usepackage{subcaption}
-  - \usepackage[spanish]{babel}
+  - \usepackage[spanish, es-tabla]{babel}
   - \usepackage[T1]{fontenc}
   - \usepackage{ebgaramond}
   - \usepackage{stmaryrd}
+  - \newcommand{\overbar}[1]{\mkern 1.5mu\overline{\mkern-1.5mu#1\mkern-1.5mu}\mkern 1.5mu}
 ---
 
 <!--   - \usepackage{unicode-math}
@@ -38,7 +39,7 @@ En esta práctica perseguimos ajustar el mejor modelo lineal en dos conjuntos de
 4. Fijaremos algunos modelos concretos y seleccionaremos el mejor según algún criterio.
 5. Estimaremos el error del modelo.
 
-Trabajamos en su mayoría con las funciones del paquete `scikit-learn`, apoyándonos cuando sea necesario en otras librerías como `numpy`, `matplotlib` ó `pandas`. El código de la práctica se ha estructurado en tres *scripts* de `Python`:
+Trabajamos en su mayoría con las funciones del paquete `scikit-learn`, apoyándonos cuando sea necesario en otras librerías como `numpy`, `matplotlib` ó `pandas`. El código de la práctica se ha estructurado en tres *scripts* de `Python` debidamente comentados:
 
 - En `p3_classification.py` se resuelve el problema de clasificación.
 - En `p3_regression.py` se resuelve el problema de regresión.
@@ -67,7 +68,14 @@ Podemos visualizar inicialmente la distribución de clases, tanto en el conjunto
 \label{fig:classes}
 \end{figure}
 
-**TODO:** imagen de alguna cifra + TSNE. Comentar que se espera una buena calidad de predicción porque hay grupos.
+Para intentar visualizar los datos, podemos emplear la técnica [TSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) para visualizar datos de alta dimensión. Este algoritmo realiza una proyección en 2 dimensiones del conjunto de datos, minimizando una métrica estadística conocida como *divergencia de Kullback-Leibler*. En la Figura \ref{fig:tsne} podemos ver el resultado de su aplicación, donde se observan 10 grupos claramente diferenciados correspondientes a las 10 clases de dígitos. En base a esto podemos pensar que los atributos contienen suficiente información para poder construir un buen clasificador, y por tanto esperamos unos resultados bastante buenos.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8\textwidth]{img/classification/tsne}
+\caption{Proyección en 2 dimensiones del conjunto de entrenamiento con TSNE para el problema de clasificación.}
+\label{fig:tsne}
+\end{figure}
 
 ## Regresión: *communities and crimes*
 
@@ -137,7 +145,7 @@ La estrategia para la selección de modelos será usar $K$-*fold cross validatio
 
 ## Clasificación
 
-En este caso, el conjunto de datos viene ya dividido en entrenamiento y *test*: disponemos de 3823 ejemplos de entrenamiento (sobre un 70%) y 1797 ejemplos de *test* (sobre un 30%). No veo ningún motivo para alterar esta división; de hecho, nos dicen que los dígitos manuscritos en ambos conjuntos fueron dibujados por personas distintas, por lo que es deseable que esta división se mantenga. De esta forma cuando evaluemos el modelo no solo intentará predecir ejemplos que no ha visto antes, sino que estos habrán estado dibujados por personas distintas a aquellos con los que fue entrenado.
+En este caso, el conjunto de datos viene ya dividido en entrenamiento y *test*: disponemos de 3823 ejemplos de entrenamiento (sobre un 70%) y 1797 ejemplos de *test* (sobre un 30%). No veo ningún motivo para alterar esta división; de hecho, nos dicen que los dígitos manuscritos en ambos conjuntos fueron dibujados por personas distintas, por lo que es deseable que esta división se mantenga. De esta forma cuando evaluemos el modelo no solo intentará predecir ejemplos que no ha visto antes, sino que estos habrán sido dibujados por personas distintas a aquellos con los que fue entrenado.
 
 ## Regresión
 
@@ -160,6 +168,8 @@ En el conjunto de dígitos no hay ningún valor perdido, por lo que este paso po
 ### Regresión
 
 En esta ocasión nos encontramos que 22 columnas tienen más de un 80% de valores perdidos. Decidimos eliminar directamente los predictores asociados de nuestro conjunto de datos, pues difícilmente vamos a poder establecer ninguna relación útil para predecir. Tras esto, nos queda un único valor perdido en uno de los ejemplos, al que decidimos atribuirle la mediana de su columna. Por un lado, decidimos rellenar el valor porque no tenemos ejemplos de sobra y la información que aportan el resto de sus atributos puede ser útil, y por otro decidimos usar la mediana como estrategia por su robustez ante posibles *outliers*.
+
+Para atribuir los valores perdidos utilizamos la transformación `SimpleImputer`, especificando en sus parámetros que la estrategia de atribución es la mediana. Además de lo ya comentado, no encontramos valores inconsistentes o extraños en el conjunto.
 
 ## Selección de características
 
@@ -206,7 +216,7 @@ Como ya comentamos cuando definimos la clase de funciones, emplearemos transform
 
 En primer lugar, procederemos a eliminar las variables con varianza 0, pues son constantes, no aportan ninguna información y pueden provocar problemas en el ajuste. También eliminaremos aquellas variables con varianza muy pequeña, todo ello utilizando el transformador `VarianceThreshold`.
 
-Por otro lado, un paso muy usual y que proporciona buenos resultados en la práctica es *estandarizar* las variables, pues hay algoritmos que implícitamente asumen que los datos están centrados en 0 y con varianza similar. A cada atributo le restamos la media de la columna y dividimos por la desviación típica, de forma que las variables resultantes quedan centradas en 0 y con varianza unidad. Esto es especialmente relevante en el caso en el que las variables no están medidas en las mismas unidades, como es el caso del problema de regresión.
+Por otro lado, un paso muy usual y que proporciona buenos resultados en la práctica es *estandarizar* las variables, pues hay algoritmos que implícitamente asumen que los datos están centrados en $0$ y con varianza similar. A cada atributo le restamos la media de la columna y dividimos por la desviación típica, de forma que las variables resultantes quedan centradas en $0$ y con varianza unidad. Esto permite que las columnas sean comparables, y es especialmente relevante cuando las variables no están medidas en las mismas unidades, como es el caso del problema de regresión.
 
 ## Orden de las transformaciones
 
@@ -235,9 +245,9 @@ preproc = [
     ("standardize2", StandardScaler())]
 ```
 
-Para regresión el cauce queda como en el correspondiente caso de clasificación, sustituyendo el parámetro de PCA por $0.8$ y eliminando el umbral de la varianza, pues en este caso muchas de las variables tienen varianza pequeña y perderíamos demasiadas.
+Para regresión el cauce queda como en el correspondiente caso de clasificación, sustituyendo el parámetro de PCA por $0.8$ y poniendo el umbral de la varianza a $0$, pues en este caso muchas de las variables tienen varianza pequeña y perderíamos demasiadas.
 
-Mostramos finalmente en la Figura \ref{fig:corr} un ejemplo de cómo evoluciona la matriz de correlación (en valor absoluto) en ambos problemas. Podemos apreciar que inicialmente hay muchas variables con fuerte correlación (especialmente en el caso de regresión), pero que tras el preprocesado muchas de las variables resultan casi incorreladas, haciendo que disminuya el número de variables potencialmente redundantes.
+Mostramos finalmente en la Figura \ref{fig:corr} un ejemplo de cómo evoluciona la matriz de correlación (en valor absoluto) en ambos problemas. Podemos apreciar que inicialmente hay muchas variables con fuerte correlación (especialmente en el caso de regresión), pero que tras el preprocesado muchas de ellas resultan casi incorreladas, haciendo que disminuya el número de variables potencialmente redundantes.
 
 \begin{figure}[h!]
     \centering
@@ -260,57 +270,240 @@ Fijamos a continuación las métricas que usaremos para la selección y evaluaci
 
 ## Clasificación
 
-En el caso del problema de clasificación no hay muchas dudas; la métrica por excelencia es el *error de clasificación*, una medida simple pero efectiva del error cometido. Si denotamos los ejemplos de entrada a un clasificador $h$ por $(x_n, y_n)$, podemos expresar el error como
+En el caso del problema de clasificación no hay muchas dudas; la métrica por excelencia es el *error de clasificación*, una medida simple pero efectiva del error cometido. Si denotamos los ejemplos de entrada a un clasificador $h$ por $(x_n, y_n)$, podemos expresar el error como la fracción total de elementos mal clasificados:
 $$
-E_{in}(h) = \frac{1}{N}\sum_{i=1}^N \llbracket h(x_n) \neq y_n \rrbracket.
+E_{class}(h) = \frac{1}{N}\sum_{i=1}^N \llbracket h(x_n) \neq y_n \rrbracket.
 $$
 
-Sabemos que esta medida de error se encuentra en el intervalo $[0,1]$, siendo $0$ lo mejor posible y $1$ lo peor. Se trata de una medida de fácil interpretación; podemos expresarla en porcentaje o invertirla, de forma que $1 - E_{in}$ es lo que se conoce como el *accuracy* del modelo. Presentaremos los resultados utilizando esta descripción ya que parece más ilustrativa.
+Sabemos que esta medida de error se encuentra en el intervalo $[0,1]$, siendo $0$ lo mejor posible y $1$ lo peor. Se trata de una medida de fácil interpretación; podemos expresarla en porcentaje o invertirla, de forma que $1 - E_{in}$ es lo que se conoce como el *accuracy* del modelo. Presentaremos los resultados utilizando esta última descripción ya que parece más ilustrativa.
 
 ## Regresión
 
-En este caso la gama de opciones es más amplia, por lo que decidimos realizar una elección múltiple. Emplearemos como métrica principal el *error cuadrático medio*, y como métrica secundaria el *coeficiente de determinación* $R^2$.
+En este caso la gama de opciones es más amplia, por lo que decidimos realizar una elección doble. Emplearemos como métrica principal el *error cuadrático medio*, y como métrica secundaria el *coeficiente de determinación* $R^2$, ambas de uso muy extendido.
 
-El error cuadrático medio (MSE) cuantifica la diferencia entre las predicciones y las etiquetas reales, y puede expresarse como
+El error cuadrático medio (MSE) cuantifica la diferencia entre las predicciones y las etiquetas reales. Se trata de un error que penaliza con mayor severidad los *outliers* en comparación, por ejemplo, al error absoluto medio. Puede expresarse como
 $$
-E_{in}(h) = \frac{1}{N} \sum_{n=1}^N (h(x_n) - y_n)^2.
+\operatorname{MSE}(h) = \frac{1}{N} \sum_{n=1}^N (y_n - h(x_n))^2.
 $$
 
-Además, aunque la métrica de error sea el MSE, para mostrar los resultados emplearemos su raíz cuadrada (abreviada RMSE), simplemente porque de esa forma el error estará en unidades de la variable a predecir y facilitará su interpretacón. Aunque esta es una de las métricas de error más usadas, tiene como desventaja que no está acotada y no tenemos un valor de referencia; solo podemos usarla en general para comparar los ajustes dentro de un mismo conjunto de datos, y no de manera absoluta.
+Además, aunque la métrica de error sea el MSE, para mostrar los resultados emplearemos su raíz cuadrada (abreviada RMSE), simplemente porque de esa forma el error estará en unidades de la variable a predecir y facilitará su interpretacón. Aunque esta es una de las métricas de error más usadas, tiene como desventaja que no está acotada superiormente y no tenemos un valor de referencia; solo podemos usarla en general para comparar los ajustes dentro de un mismo conjunto de datos, y no de manera absoluta.
 
 Para tener una medida absoluta de error consideramos también el coeficiente de determinación $R^2$. Este coeficiente indica la bondad del ajuste, tomando su máximo valor en $1$ (ajuste perfecto), y pudiendo tomar también valores negativos (a pesar de su nombre). Su definición es la siguiente:
 $$
-R^2(h) = 1 - \frac{\sum_{n=1}^N (y_n - h(x_n))^2}{\sum_{n=1}^N (y_n - \bar{y})^2}, \quad \text{con } \bar{y} = \frac{1}{N}\sum_{i=1}^N y_n.
+R^2(h) = 1 - \frac{\sum_{n=1}^N (y_n - h(x_n))^2}{\sum_{n=1}^N (y_n - \overbar{y})^2}, \quad \text{con } \overbar{y} = \frac{1}{N}\sum_{i=1}^N y_n.
 $$
 
-# Técnicas y selección de modelos
+# Regularización
 
-- meter preprocesado en CV
-- técnicas de ajuste
-- regularización
-- modelos
-- grid search regresión usa neg_mse
+El uso de la regularización es esencial para limitar la complejidad del modelo y el *overfitting*, cosa que nos permitirá obtener una mejor capacidad de generalización. En principio se consideran dos posibilidades de regularización:
 
-# Análisis de resultados y estimación del error
-
-Se proporciona una medida del tiempo de ejecución de los procesos de ajustes de modelos en mi máquina (`Intel i5 7200U (4) @ 3.1GHz`).
-
-- learning curve: escala importa; en realidad están pegados.
-
-- Estimar Ecv y Etest.
-- interpretar los errores.
-- Cota hoeffding en clasificación (vale la misma)
+- **Regularización L2 (Ridge)**: se añade una penalización a la función de pérdida que es cuadrática en los pesos,
+$$
+L_{reg}(w) = L(w) + \lambda||w||_2^2.
+$$
+- **Regularización L1 (Lasso)**: en este caso la penalización es lineal en los pesos, considerando la suma del valor absoluto de los mismos,
+$$
+L_{reg}(w) = L(w) + \lambda \sum_i |w_i|.
+$$
+En ambos casos el valor de $\lambda > 0$ es un hiperparámetro del modelo, que controla la intensidad de la regularización (a mayor valor, más pequeños serán los pesos). Encontrar un valor adecuado es una tarea complicada, pues si es demasiado pequeño seguiremos teniendo sobreajuste, pero si es demasiado grande podríamos caer en el fenómeno opuesto: tener *underfitting* porque el modelo sea poco flexible y no consiga ajustar bien los datos de entrenamiento.
 
 ## Clasificación
 
-- confusion matrix
-- pca projections
+Elegimos la regularización de tipo L2 frente a L1 porque la primera penaliza con más fuerza los valores grandes, y funciona mejor cuando se cree que todas las variables son relevantes para la predicción. Además, la penalización que se introduce en ese caso es una función derivable de los pesos, que hace que su tratamiento computacional sea más eficiente.
 
-Clasificador no lineal para comparar
-(no se realiza preprocesado, explicar por qué)
+## Regresión
 
+Para el caso de regresión seguimos el mismo razonamiento que para clasificación; seleccionamos la pérdida L2. Sin embargo, en este caso también pensamos que merece la pena comparar con la pérdida L1, pues si bien ya se ha realizado una selección de características, el origen diverso de los datos en este conjunto hace que podamos pensar que todavía existan algunas variables que no influyan demasiado en el resultado. La regresión L1 realiza una especie de selección automática de características (obtiene modelos *dispersos* en los que muchos de los pesos van a $0$), proporcionando una segunda capa de selección que esperamos mejore la calidad del ajuste. En cualquier caso, consideraremos modelos con ambos tipos de regularización y dejaremos que compitan entre ellos para seleccionar el mejor.
+
+# Técnicas y selección de modelos
+
+Pasamos a realizar la selección de modelos para el ajuste. Como ya dijimos, vamos a usar la técnica de $K$-*fold cross validation* para elegir el mejor modelo. Esta técnica se basa en dividir el conjunto de entrenamiento en $K$ conjuntos de igual tamaño, y va iterando sobre ellos de forma que en cada paso entrena los modelos en los datos pertenecientes a $K-1$ de los conjuntos, y los evalúa en el conjunto restante. Finalmente se realiza la media del error a lo largo de todos los mini-conjuntos de validación y se escoge el modelo con menor error. Este error se conoce como *error de cross-validation*, denotado $E_{cv}$, y sabemos que es un buen estimador del error fuera de la muestra.
+
+Es importante destacar que debemos considerar un modelo como un estimador junto a un conjunto de parámetros fijo; es decir, pondremos a competir una serie de parejas (estimador, hiperparámetros) de forma que tras la selección obtengamos **el mejor modelo con los mejores parámetros**. Para ello utilizamos la función `GridSearchCV`, la cual puede recibir un *pipeline* como estimador y una lista de diccionarios que represente el espacio de parámetros. En cada uno de los diccionarios podemos fijar el estimador a usar y los parámetros con los que queremos probar. Para evitar el fenómeno de *data snooping* que podría contaminar los conjuntos de validación, todo el cauce de preprocesado y selección de modelos se realiza de principio a fin: fijamos al principio las divisiones en $K$ *folds* y las utilizamos en todo el proceso. Para el caso de clasificación, estas divisiones serán en particular instancias de `StratifiedKFold`, que respeta la distribución de clases en las divisiones.
+
+Una vez hemos encontrado el mejor modelo con los mejores parámetros, **se vuelve a entrenar sobre todo el conjunto de entrenamiento**, para obtener un mejor rendimiento. Este es el comportamiento por defecto de la función `GridSearchCV`.
+
+## Clasificación
+
+Comentamos ahora los modelos que pre-seleccionamos en el problema de clasificación para que compitan entre ellos. La métrica usada para decidir el mejor modelo será, de forma natural, el *accuracy* medio en los conjuntos de validación. Fijamos el número máximo de iteraciones en 500 para todos los modelos.
+
+### Regresión logística
+
+En primer lugar consideramos un modelo de regresión logística, implementado en el objeto `LogisticRegression`, que sabemos que obtiene en la práctica muy buenos resultados en problemas de clasificación multiclase. Como ya comentamos, fijamos el tipo de regularización a L2, y la estrategia de clasificación multiclase a *one-vs-all*, que es la que usaremos en todos los modelos. El parámetro de regularización, cuyo inverso es lo que en el código se alude como `C`, lo dejaremos a elección del proceso de selección, considerando unos valores posibles de $10^{-4}$, $1$ y $10^4$ (no se consideran más valores para no aumentar en exceso el tiempo de ejecución).
+
+```python
+{"clf": [LogisticRegression(multi_class = 'ovr',
+                            penalty = 'l2',
+                            max_iter = max_iter)],
+ "clf__C": np.logspace(-4, 4, 3)}
 ```
 
+En este caso, la técnica de optimización es la que viene por defecto, que se conoce como [LBFGS](https://en.wikipedia.org/wiki/Limited-memory_BFGS). Se trata de un algoritmo iterativo similar al método de Newton para optimización, pero que utiliza una aproximación de la inversa de la matriz Hessiana. Se ha elegido porque tiene un tiempo de ejecución asumible y los resultados suelen ser buenos. La función a optimizar es la *pérdida logarítmica*:
+$$
+L_{log}(w) = \frac{1}{N}\sum_{n=1}^N \log(1 + e^{-y_nw^Tx_n}),
+$$
+a la que se añade el término de penalización L2. Debemos tener en cuenta que aunque el algoritmo optimice esta función para proporcionar un resultado, la métrica de error que nosotros estamos usando es el *accuracy* y no el error logarítmico.
+
+### Regresión lineal
+
+Consideramos también un modelos de regresión lineal, como ya hicimos en las prácticas anteriores. Utilizamos un objeto `RidgeClassifier`, que fija implícitamente la regularización L2. En este caso, la constante de regularización se llama `alpha`, y de nuevo dejamos que varíe en el mismo rango que en regresión logística.
+
+```python
+{"clf": [RidgeClassifier(random_state = SEED,
+                         max_iter = max_iter)],
+ "clf__alpha": np.logspace(-4, 4, 3)}
+```
+
+En este caso se pretende minimizar el error cuadrático de regresión (añadiendo el correspondiente término de regularización):
+$$
+L_{lin}(w) = \frac{1}{N} \sum_{n=1}^N (y_n - w^Tx_n)^2.
+$$
+Para ello se utiliza la técnica de la Pseudoinversa basada en la descomposición SVD de la matriz de datos, obteniendo una solución en forma cerrada y sin seguir un procedimiento iterativo. Se ha elegido esta técnica en lugar de SGD porque el tiempo de ejecución es más reducido y las soluciones obtenidas son suficientemente buenas.
+
+### Perceptrón
+
+Por último, comparamos con un modelo perceptrón, llamado `Perceptron()` en el código. Establecemos la penalización L2, con el parámetro `alpha` en las mismas condiciones que en regresión lineal.
+
+```python
+{"clf": [Perceptron(penalty = 'l2',
+                    random_state = SEED,
+                    max_iter = max_iter)],
+ "clf__alpha": np.logspace(-4, 4, 3)}
+```
+
+La técnica usada es el algoritmo de optimización iterativa SGD, con un *learning rate* constante de $1$ y la pérdida asociada al perceptrón (más un término de regularización):
+$$
+L_{pla}(w) = \frac{1}{N} \sum_{n=1}^N \max(0, -y_nw^Tx_n).
+$$
+Esta es la única técnica que proporciona la API de `sklearn` para este modelo, pero sabemos que es equivalente (salvo la condición de parada) al algoritmo perceptrón clásico.
+
+## Regresión
+
+En el problema de regresión, la métrica que utilizaremos para comparar los modelos y elegir el mejor será nuestra métrica principal: el MSE. Sin embargo, como la implementación subyacente de `GridSearchCV` busca siempre maximizar la métrica que se le proporciona, le pasamos el parámetro `neg_mean_squared_error` (el MSE negado). Fijamos el número máximo de iteraciones en 2000.
+
+Ahora solo tenemos un tipo de modelo a elegir: la regresión lineal. Lo que haremos será diferenciar tres modelos, según la técnica de regularización y de optimización. Todos ellos tratan de minimizar el error cuadrático medio. Como se ha observado que los tiempos de ejecución en este caso son menores, se permite seleccionar hasta $10$ parámetros equiespaciados en escala logarítmica entre $10^{-4}$ y $10^{4}$ para la constante de regularización.
+
+```python
+{"reg": [SGDRegressor(penalty = 'l2',
+                      max_iter = max_iter,
+                      random_state = SEED)],
+ "reg__alpha": np.logspace(-4, 4, 10)},
+{"reg": [Ridge(max_iter = max_iter)],
+ "reg__alpha": np.logspace(-4, 4, 10)},
+{"reg": [Lasso(random_state = SEED,
+               max_iter = max_iter)],
+ "reg__alpha": np.logspace(-4, 4, 10)}
+```
+
+Así, tenemos un primero modelo con pérdida L2 y técnica SGD de minimización de la función de pérdida. Después consideramos otro modelo con el mismo tipo de regularización L2, pero esta vez usando la técnica de la Pseudoinversa que comentábamos antes. Por último, consideramos un modelo con pérdida L1 y técnica de optimización basada en descenso de coordenadas, cuya eficiencia es conocida y hace que sea usado en la práctica.
+
+# Análisis de resultados y estimación del error
+
+Veamos ahora cuál ha sido el resultado de la selección de modelos y el desempeño del modelo final. Como ya comentamos, el proceso de selección tal y como fue descrito en la sección anterior se materializa con una llamada a la función `GridSearchCV`, donde usaremos $K=5$. Se proporciona una medida del tiempo de ejecución de los procesos de ajustes de modelos en mi máquina (`Intel i5 7200U (4) @ 3.1GHz`).
+
+## Clasificación
+
+Para el problema de clasificación, estudiamos el desempeño diferenciando las dos posibles estrategias de selección que teníamos. Utilizando PCA, el modelo triunfador ha sido el de **regresión logística**, con un valor de $1.0$ para la constante de regularización, obteniendo un accuracy en *cross-validation* de $98.718$% y usando finalmente $464$ variables para el ajuste. Tras reentrenar el modelo y evaluarlo, obtenemos un *accuracy* del $100$% en entrenamiento y un nada desdeñable $98.831$% en el conjunto de *test*.
+
+Por otro lado, utilizando la estrategia de selección basada en el test ANOVA, obtenemos de nuevo que el mejor modelo es el de regresión logística, con la misma constante de regularización y usando $560$ variables. Esta vez conseguimos un *accuracy* de $98.561$% en *cross-validation*, de $100$% en entrenamiento, y de $97.551$% en *test*.
+
+Por último, mencionamos que se ha probado a ejecutar el programa sin realizar ningún tipo de selección de variables. El resultado es el que ya podemos adivinar: la regresión logística se impone de nuevo, esta vez con una constante de regularización de $10^{-4}$ y $1935$ variables. Los resultados son un $98.692$% de *accuracy* en *cross-validation*, un $100$% en entrenamiento y un $98.052$% en *test*, pero el tiempo de ejecución aumenta de forma considerable.
+
+Vemos un resumen de los resultados obtenidos, expresándolos ahora en base al error y no al *accuracy*:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+              & $E_{cv}$ & $E_{in}$ & $E_{test}$ & Tiempo \\ \hline
+PCA           & 1.282           & 0.000           & 1.169               & 10.962          \\ \hline
+ANOVA         & 1.439           & 0.000           & 2.449               & 20.625          \\ \hline
+Sin selección & 1.308           & 0.000           & 1.948               & 69.435          \\ \hline
+\end{tabular}
+\caption{Tabla de resultados para el problema de clasificación. Los errores se expresan en porcentaje, y el tiempo en segundos.}
+\end{table}
+
+Vemos que la versión sin selección de variables obtiene resultados ligeramente mejores en *test* que la estrategia de selección ANOVA; sin embargo, el número exesivo de variables y el alto tiempo de ejecución hacen que descartemos esta opción por completo. Vemos que con la estrategia de selección con PCA obtenemos los mejores resultados, por lo que fijamos este modelo como nuestra hipótesis definitiva $g$.
+
+Presentamos ahora una serie de gráficos para ilustrar el proceso de entrenamiento y los resultados. En primer lugar, vemos en la Figura \ref{fig:confusion} la matriz de confusión del clasificador en el conjunto de *test*, que muestra la correspondencia entre las etiquetas predichas y las reales para cada clase; en particular, en la diagonal se muestran los aciertos, y en el resto de posiciones los fallos. Como podemos observar, los errores se producen en apenas unos pocos ejemplos, y como anécdota podemos comentar que los dígitos que más se confunden son el $1$ y el $8$ (4 instancias mal clasificadas en total).
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=.8\textwidth]{img/classification/confusion}
+\caption{Matriz de confusión para el mejor clasificador en el conjunto de \textit{test}.}
+\label{fig:confusion}
+\end{figure}
+
+Podemos intentar visualizar el ajuste en dos dimensiones, empleando para ello las dos primeras componentes principales. Proyectamos el conjunto de *test* (tras normalizarlo) sobre sus primeras dos componentes, y lo etiquetamos según las etiquetas predichas por nuestro clasificador, obteniendo una gráfica como la de la Figura \ref{fig:scatter}. Vemos cómo hay $10$ grupos más o menos diferenciados, si bien se observa algo de solapamiento, pero concluimos que hemos tenido éxito en nuestra tarea de separar las clases.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=.8\textwidth]{img/classification/scatter}
+\caption{Proyección de las dos primeras componentes principales con etiquetas predichas.}
+\label{fig:scatter}
+\end{figure}
+
+También podemos volver a proyectar sobre las dos primeras componentes principales, esta vez coloreando los puntos según sus etiquetas reales, y hacer lo propio con tres clasificadores elegidos arbitrariamente. El resultado será una gráfica como la de la Figura \ref{fig:scatter2}, en la que podemos distinguir la proyección de las fronteras de clasificación y ver que más o menos separan los datos en dimensión 2 de acuerdo a sus verdaderas etiqutas.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=.8\textwidth]{img/classification/scatter_2}
+\caption{Proyección de las dos primeras componentes principales y de las fronteras de clasificación para las clases 1, 2 y 3, con etiquetas reales.}
+\label{fig:scatter2}
+\end{figure}
+
+Finalmente, podemos mostrar  en la \ref{fig:lc_class} una gráfica de la *curva de aprendizaje* de nuestro modelo. Esta curva consiste en ir entrenando el modelo con porciones incrementales de nuestro conjunto de entrenamiento, reservando en cada caso un subconjunto de validación para ir evaluándolo en paralelo.
+
+Podemos observar esta curva de aprendizaje en la primera gráfica, donde vemos que el *accuracy* en entrenamiento comienza en $0$, y va disminuyendo ligeramente conforme aumentamos el número de ejemplos. Por su parte el *accuracy* de validación va avanzando de manera inversa: va mejorando conforme aumentamos el número de ejemplos. Este es el comportamiento esperado, y de hecho podemos concluir que nuestro modelo aún no ha llegado al punto de saturación en el aprendizaje y se beneficiaría de disponer de maś ejemplos para entrenar, pues todavía no ha alcanzado el punto en el que el *accuracy* en validación comienza a disminuir. Notamos que la escala está aumentada para que veamos bien las diferencias, pero en realidad si viésemos el *accuracy* en escala $[0,1]$ apreciaríamos que las dos curvas están muy pegadas.
+
+Las dos gráficas restantes nos dan una idea de la escalabilidad y el rendimiento del modelo, midiendo el tiempo de entrenamiento frente al número de ejemplos, y el *accuracy* frente al tiempo de entrenamiento, respectivamente. En el primer caso podemos ver cómo el tiempo de ejecución crece de manera aproximadamente lineal con el número de ejemplos, y en el segundo cómo el crecimiento del *accuracy* respecto al tiempo de entrenamiento presenta un comportamiento más o menos logarítmico.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=\textwidth]{img/classification/learning_curve}
+\caption{Curvas de aprendizaje, escalabilidad y rendimiento para el clasificador escogido.}
+\label{fig:lc_class}
+\end{figure}
+
+### Estimación del error
+
+Finalmente pasamos a estimar el error del modelo. Como ya comentamos al principio de la sección [Técnicas y selección de modelos], el error de *cross-validation* es un buen estimador del error fuera de la muestra, y en general podremos esperar que $E_{out} \leq E_{cv}$ (aunque no está garantizado). Sin embargo, la mejor medida que podemos hacer en estas condiciones del error de generalización viene a partir de $E_{test}$, pues el conjunto de *test* no se ha usado en ninguna de las fases del entrenamiento y la selección de modelos, y por tanto nos proporciona una buena estimación de $E_{out}$. En este caso particular, como estamos utilizando como métrica el error de clasificación, es de aplicación la *cota de Hoeffding* que conocemos para el error en *test*, a saber:
+$$E_{out}(g) \leq E_{test}(g) + \sqrt{\frac{1}{2N_{test}}\log \frac{2}{\delta}}, \quad \text{con probabilidad } \geq 1-\delta.$$
+Por ejemplo, fijando $\delta = 0.05$ podemos garantizar con un $95$% de confianza que
+$$
+E_{out} \leq 1.169 + \sqrt{\frac{1}{2\cdot 1797}\log\frac{2}{0.05}} \ \approx 1.20.
+$$
+Es decir, si una empresa nos hubiera encargado realizar este ajuste, le diriamos que el modelo proporcionado tiene un error del $1.2$% con un $95$% de confianza.
+
+## Regresión
+
+Reproducimos ahora los resultados obtenidos para el problema de regresión. En este caso solo tenemos una estrategia de preprocesado, para la cual el modelo ganador ha sido **regresión lineal con penalización L1**, obteniendo un error RMSE de *cross-validation* de $0.139$, de $0.131$ en entrenamiento y de $0.128$ en el conjunto de *test*. La mejor constante de regularización encontrada es `alpha` $\approx$ 0.00078, utilizando finalmente 77 variables en el ajuste. Los resultados obtenidos sin utilizar ningún tipo de selección de variables son similares (ligeramente peores en el conjunto de *test*), pero ni siquiera los consideramos por usar un número demasiado elevado de variables (más de 5000). Por tanto, elegimos como hipótesis definitiva $g$ el modelo de regresión Lasso obtenido, cuyos resultados quedan recogidos en la siguiente tabla:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+& $RMSE_{cv}$ & $RMSE_{in}$ & $RMSE_{test}$ & $R^2_{in}$ & $R^2_{test}$ &  Tiempo \\ \hline
+PCA   & 0.139     & 0.131   & 0.128 & 0.684 & 0.702     & 2.599 \\ \hline
+\end{tabular}
+\caption{Tabla de resultados para el problema de regresión. El RMSE está en unidades de la variable a predecir, el $R^2$ en esas unidades al cuadrado, y el tiempo en segundo.}
+\end{table}
+
+Vamos a ilustrar también en esta ocasión el proceso de entrenamiento y los resultado con algunas gráficas. En primer lugarm vemos en la Figura {fig:residues} una doble gráfica. La primera es una representación de los *residuos* del ajuste, definidos como las diferencias entre los valores predichos y los valores reales:
+$$
+R(y, h(x_n)) = y - h(x_n)
+$$
+Lo ideal es que estos valores estén cercanos a $0$, y que no presenten ninguna distribución que haga pensar que tienen cierta información subyacente que no hemos podido capturar en el ajuste. Por otro lado, la segunda gráfica muestra los valores predichos frente a los valores reales, junto con dos rectas: la recta identidad que sería un ajuste perfecto, y la recta que mejor aproxima la nube de puntos.
+
+# Conclusiones y justificación
+
+- Recapitular modelos elegidos
+- - interpretar los errores.
+
+Clasificador no lineal para comparar
+(no se realiza preprocesado, explicar por qué, limitar profundidad)
+
+```
 --- Clasificador no lineal (RandomForest) ---
 Número de árboles: 200
 Profundidad máxima: 32
@@ -326,93 +519,14 @@ Número de variables usadas: 64
 Accuracy en training: 10.097%
 Accuracy en test: 9.683%
 Tiempo: 0.002s
-
-------------PCA------------
-
-Selecciona 29 variables pre-poly. Fijado a 0.95.
-
---- Mejor clasificador lineal ---
-Parámetros:
-LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
-                   intercept_scaling=1, l1_ratio=None, max_iter=500,
-                   multi_class='ovr', n_jobs=None, penalty='l2',
-                   random_state=None, solver='lbfgs', tol=0.0001, verbose=0,
-                   warm_start=False)
-Número de variables usadas: 464
-Accuracy en CV: 98.718%
-Accuracy en training: 100.000%
-Accuracy en test: 98.831%
-Tiempo: 10.962s
-
----- SELECT K BEST (f_test ANOVA) ------
-
-K = 32
-
---- Mejor clasificador lineal ---
-Parámetros:
-LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
-                   intercept_scaling=1, l1_ratio=None, max_iter=500,
-                   multi_class='ovr', n_jobs=None, penalty='l2',
-                   random_state=None, solver='lbfgs', tol=0.0001, verbose=0,
-                   warm_start=False)
-Número de variables usadas: 560
-Accuracy en CV: 98.561%
-Accuracy en training: 100.000%
-Accuracy en test: 97.551%
-Tiempo: 20.625s
-
-
------ SIN SELECCIÓN DE VARIABLES -----
-
---- Mejor clasificador lineal ---
-Parámetros:
-LogisticRegression(C=10000.0, class_weight=None, dual=False, fit_intercept=True,
-                   intercept_scaling=1, l1_ratio=None, max_iter=500,
-                   multi_class='ovr', n_jobs=None, penalty='l2',
-                   random_state=None, solver='lbfgs', tol=0.0001, verbose=0,
-                   warm_start=False)
-Número de variables usadas: 1935
-Accuracy en CV: 98.692%
-Accuracy en training: 100.000%
-Accuracy en test: 98.052%
-Tiempo: 69.435s
 ```
 
 ## Regresión
 
+- núemro de variables pequeño aun tras aumento
+
+
 ```
--------- PCA(0.8) -------------
-
-Explicar que se ha probado sin PCA y va peor.
-
---- Mejor regresor lineal ---
-Parámetros:
-Lasso(alpha=0.000774263682681127, copy_X=True, fit_intercept=True,
-      max_iter=2000, normalize=False, positive=False, precompute=False,
-      random_state=2020, selection='cyclic', tol=0.0001, warm_start=False)
-Número de variables usadas: 77
-RMSE en CV: 0.139
-RMSE en training: 0.131
-R2 en training: 0.684
-RMSE en test: 0.128
-R2 en test: 0.702
-Tiempo: 2.599s
-
------ SIN SELECCIÓN DE VARIABLES -----
-
---- Mejor regresor lineal ---
-Parámetros:
-Lasso(alpha=0.005994842503189409, copy_X=True, fit_intercept=True,
-      max_iter=2000, normalize=False, positive=False, precompute=False,
-      random_state=2020, selection='cyclic', tol=0.0001, warm_start=False)
-Número de variables usadas: 5150
-RMSE en CV: 0.137
-RMSE en training: 0.127
-R2 en training: 0.700
-RMSE en test: 0.129
-R2 en test: 0.698
-Tiempo: 100.955s
-
 --- Regresor no lineal (RandomForest) ---
 Número de árboles: 200
 Número de variables usadas: 100

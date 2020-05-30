@@ -137,6 +137,7 @@ def regression_fit(compare = False, show = 0):
     X_test_pre = preproc_pipe.transform(X_test)
 
     # Construimos un pipeline de preprocesado + regresión
+    # (el regresor que ponemos puede ser cualquiera, es un 'placeholder')
     pipe = Pipeline(preproc + [("reg", LinearRegression())])
 
     if show > 0:
@@ -155,7 +156,6 @@ def regression_fit(compare = False, show = 0):
     # Elegimos los modelos lineales y sus parámetros para CV
     max_iter = 2000
     search_space = [
-        {"reg": [LinearRegression()]},
         {"reg": [SGDRegressor(penalty = 'l2',
                               max_iter = max_iter,
                               random_state = SEED)],

@@ -32,7 +32,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 
 from p3_visualization import (wait, scatter_pca, scatter_pca_classes, confusion_matrix,
-    plot_feature_importance, plot_learning_curve, plot_class_distribution, plot_corr_matrix)
+    plot_feature_importance, plot_learning_curve, plot_class_distribution, plot_corr_matrix,
+    plot_tsne)
 
 #
 # PARÁMETROS GLOBALES
@@ -87,6 +88,16 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
     X_test, y_test = read_data(PATH + "optdigits.tes")
     print("Hecho.")
 
+    if show > 0:
+        print("Mostrando gráficas de inspección de los datos...")
+
+        # Mostramos distribución de clases en training y test
+        plot_class_distribution(y_train, y_test, N_CLASSES, SAVE_FIGURES, IMG_PATH)
+
+        if show > 1:
+            # Visualizamos el conjunto en 2 dimensiones
+            plot_tsne(X_train, y_train, SAVE_FIGURES, IMG_PATH)
+
     # Establecemos la técnica de selección de variables
     if selection_strategy == Selection.PCA:
         preproc = [("selection", PCA(0.95))]
@@ -111,13 +122,11 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
     X_test_pre = preproc_pipe.transform(X_test)
 
     # Construimos un pipeline de preprocesado + clasificación
+    # (el clasificador que ponemos puede ser cualquiera, es un 'placeholder')
     pipe = Pipeline(preproc + [("clf", LogisticRegression())])
 
     if show > 0:
         print("\nMostrando gráficas sobre preprocesado y características...")
-
-        # Mostramos distribución de clases en training y test
-        plot_class_distribution(y_train, y_test, N_CLASSES, SAVE_FIGURES, IMG_PATH)
 
         # Mostramos matriz de correlación de training antes y después de preprocesado
         plot_corr_matrix(X_train, X_train_pre, SAVE_FIGURES, IMG_PATH)

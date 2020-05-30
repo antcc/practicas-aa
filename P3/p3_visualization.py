@@ -24,6 +24,7 @@ from matplotlib import cm
 from sklearn.metrics import plot_confusion_matrix
 from sklearn.model_selection import learning_curve
 from sklearn.linear_model import LinearRegression
+from sklearn.manifold import TSNE
 
 #
 # COMUNES
@@ -285,6 +286,19 @@ def plot_learning_curve(estimator, X, y, scoring, ylim = None, cv = None,
 #
 # CLASIFICACIÓN
 #
+
+def plot_tsne(X, y, save_figures = False, img_path = ""):
+    """Aplica el algoritmo TSNE para proyectar el conjunto X en 2 dimensiones,
+       junto a las etiquetas correspondientes."""
+
+    scatter_plot(
+        TSNE().fit_transform(X),
+        y,
+        axis = ["x", "y"],
+        title = "Proyección 2-dimensional con TSNE",
+        figname = "tsne",
+        save_figures = save_figures,
+        img_path = img_path)
 
 def scatter_pca(X, y_pred, save_figures = False, img_path = ""):
     """Proyección de las dos primeras componentes principales
