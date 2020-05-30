@@ -5,7 +5,7 @@ author: Antonio Coín Castro
 date: Curso 2019-20
 geometry: margin = 1.2in
 documentclass: scrartcl
-fontsize: 13pt
+fontsize: 12pt
 colorlinks: true
 indent: true
 urlcolor: Magenta
@@ -21,10 +21,11 @@ header-includes:
   - \usepackage{ebgaramond}
   - \usepackage{stmaryrd}
   - \newcommand{\overbar}[1]{\mkern 1.5mu\overline{\mkern-1.5mu#1\mkern-1.5mu}\mkern 1.5mu}
+  - \usepackage{unicode-math}
+  - \setmathfont{Libertinus Math}
 ---
 
-<!--   - \usepackage{unicode-math}
-  - \setmathfont{Libertinus Math}-->
+
 \decimalpoint
 
 \newpage
@@ -55,11 +56,11 @@ Ambas bases de datos se han descargado del [repositorio UCI](https://archive.ics
 
 ## Clasificación: *optical recognition of handwritten digits*
 
-El primer conjunto de datos es un conjunto para clasificación. Se trata de un conjunto de 5620 dígitos manuscritos codificados en 64 atributos de tipo entero, al que contribuyeron 43 personas diferentes escribiendo dígitos. Cada dígito se escaneó con una resolución de $32\times32$, siendo cada píxel blanco o negro. Posteriormente, para cada bloque $4\times 4$ no solapado se calculó el número de píxeles negros que hay en ese bloque, obteniendo finalmente 64 atributos que tienen un valor entero entre 0 y 16. La salida o variable de clase es un atributo categórico entre 0 y 9 que representa el dígito dibujado.
+El primer conjunto de datos es un conjunto para clasificación. Se trata de un conjunto de 5620 dígitos manuscritos codificados en 64 atributos de tipo entero, al que contribuyeron 43 personas diferentes escribiendo dígitos. Cada dígito se escaneó con una resolución de $32\times32$, siendo cada píxel blanco o negro. Posteriormente, para cada bloque $4\times 4$ no solapado se calculó el número de píxeles negros que hay en ese bloque, obteniendo finalmente 64 atributos que tienen un valor entero entre $0$ y $16$. La salida o variable de clase es un atributo natural entre $0$ y $9$ que representa el dígito dibujado.
 
 Por tanto, como disponemos de las etiquetas reales de cada instancia estamos ante un problema de aprendizaje supervisado; en particular, un problema de **clasificación multiclase**. En principio, consideramos como espacio muestral $\mathcal X = \{0, \dots, 16\}^{64}$ y como conjunto de etiquetas $\mathcal Y = \{0, \dots, 9\}$. Queremos aprender o estimar una función $f: \mathcal X \to \mathcal Y$ que asigne a cada muestra codificada como hemos dicho anteriormente su correspondiente dígito.
 
-Podemos visualizar inicialmente la distribución de clases, tanto en el conjunto de entrenamiento como en el de *test*. Aunque ya nos lo decían en el informe de la base de datos, podemos observar en la Figura \ref{fig:classes} que la distribución de clases es uniforme en ambos conjuntos; no hay problema de clases desbalanceadas.
+Podemos visualizar inicialmente la distribución de clases, tanto en el conjunto de entrenamiento como en el de *test*. Aunque ya nos lo decían en el informe de la base de datos, podemos observar en la Figura \ref{fig:classes} que la distribución de clases es casi uniforme en ambos conjuntos; no hay problema de clases desbalanceadas.
 
 \begin{figure}[h!]
 \centering
@@ -68,7 +69,7 @@ Podemos visualizar inicialmente la distribución de clases, tanto en el conjunto
 \label{fig:classes}
 \end{figure}
 
-Para intentar visualizar los datos, podemos emplear la técnica [TSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) para visualizar datos de alta dimensión. Este algoritmo realiza una proyección en 2 dimensiones del conjunto de datos, minimizando una métrica estadística conocida como *divergencia de Kullback-Leibler*. En la Figura \ref{fig:tsne} podemos ver el resultado de su aplicación, donde se observan 10 grupos claramente diferenciados correspondientes a las 10 clases de dígitos. En base a esto podemos pensar que los atributos contienen suficiente información para poder construir un buen clasificador, y por tanto esperamos unos resultados bastante buenos.
+Para intentar visualizar los datos, podemos emplear la técnica [TSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) para visualizar datos de alta dimensión. Este algoritmo realiza una proyección en 2 dimensiones del conjunto de datos, minimizando una métrica estadística conocida como *divergencia de Kullback-Leibler*. En la Figura \ref{fig:tsne} podemos ver el resultado de su aplicación, donde se observan $10$ grupos claramente diferenciados correspondientes a las $10$ clases de dígitos. En base a esto podemos pensar que los atributos contienen suficiente información para poder construir un buen clasificador, y por tanto esperamos unos resultados bastante buenos.
 
 \begin{figure}[h!]
 \centering
@@ -79,9 +80,9 @@ Para intentar visualizar los datos, podemos emplear la técnica [TSNE](https://s
 
 ## Regresión: *communities and crimes*
 
-El segundo conjunto de datos con el que trabajamos es un conjunto para regresión. Esta vez se trata de 1994 instancias que recogen información de tipo muy variado sobre ciertas regiones de Estados Unidos, para intentar predecir a partir de ellas el número total de crímenes violentos por cada $100.000$ habitantes en dicha región. Por ejemplo, se recoge información sobre el número de habitantes, su raza, la renta *per cápita* o el porcentaje de familias divorciadas, entre otros.
+El segundo conjunto de datos con el que trabajamos es un conjunto para regresión. Esta vez se trata de 1994 instancias que recogen información de tipo muy variado sobre ciertas regiones de Estados Unidos, para intentar predecir a partir de ellas el número total de crímenes violentos por cada $100.000$ habitantes en dicha región. Por ejemplo, se recoge información sobre el número de habitantes, su raza, la renta *per cápita* o el porcentaje de hombres divorciados, entre otros.
 
-Cada ejemplo consta de 128 atributos, de donde los cinco primeros son no predictivos (*state*, *county*, *community*, *communityname* y *fold*), los 122 atributos son predictivos (con valores reales) y el último, de tipo real, es la variable que queremos predecir (`ViolentCrimesPerPop`). Se trata entonces de un problema de aprendizaje supervisado; en particular, un problema de **regresión**. Nos dicen que todos los datos están normalizados al intervalo $[0, 1]$, por lo que consideramos $\mathcal X = [0, 1]^{122}$, $\mathcal Y = [0, 1]$ y queremos aprender una función $f:\mathcal X \to \mathcal Y$ que asigne a cada ejemplo la cantidad (normalizada) de crímenes violentos que se producen por cada $100.000$ habitantes.
+Cada ejemplo consta de 128 atributos, de donde los cinco primeros son no predictivos (*state*, *county*, *community*, *communityname* y *fold*), los 122 atributos siguientes son predictivos (con valores reales) y el último, de tipo real, es la variable que queremos predecir (`ViolentCrimesPerPop`). Se trata entonces de un problema de aprendizaje supervisado; en particular, un problema de **regresión**. Nos dicen que todos los datos están normalizados al intervalo $[0, 1]$, por lo que consideramos $\mathcal X = [0, 1]^{122}$, $\mathcal Y = [0, 1]$ y queremos aprender una función $f:\mathcal X \to \mathcal Y$ que asigne a cada ejemplo la cantidad (normalizada) de crímenes violentos que se producen por cada $100.000$ habitantes.
 
 Para intentar visualizar los datos hemos seguido dos estrategias. Por un lado, se han seleccionado (mediante el criterio de importancia que otorga un `Random Forest`) las dos variables con mayor relevancia y poder predictivo, que resultan ser el tanto por uno de niños de 4 años o menos en familias biparentales (`PctYoungKids2Par`) y el tanto por uno de hombres que nunca han estado casados (`MalePctNevMarr`). Una representación de las mismas junto a la variable a predecir puede verse en la Figura \ref{fig:features_y}, donde observamos que hay una correlación substancial (en el primer caso positiva y en el segundo negativa).
 
@@ -279,14 +280,14 @@ Sabemos que esta medida de error se encuentra en el intervalo $[0,1]$, siendo $0
 
 ## Regresión
 
-En este caso la gama de opciones es más amplia, por lo que decidimos realizar una elección doble. Emplearemos como métrica principal el *error cuadrático medio*, y como métrica secundaria el *coeficiente de determinación* $R^2$, ambas de uso muy extendido.
+En este caso la gama de opciones es más amplia, por lo que decidimos realizar una elección doble. Emplearemos como métrica principal en los ajustes el *error cuadrático medio*, y como métrica secundaria para apoyar el análisis el *coeficiente de determinación* $R^2$, ambas de uso muy extendido.
 
 El error cuadrático medio (MSE) cuantifica la diferencia entre las predicciones y las etiquetas reales. Se trata de un error que penaliza con mayor severidad los *outliers* en comparación, por ejemplo, al error absoluto medio. Puede expresarse como
 $$
 \operatorname{MSE}(h) = \frac{1}{N} \sum_{n=1}^N (y_n - h(x_n))^2.
 $$
 
-Además, aunque la métrica de error sea el MSE, para mostrar los resultados emplearemos su raíz cuadrada (abreviada RMSE), simplemente porque de esa forma el error estará en unidades de la variable a predecir y facilitará su interpretacón. Aunque esta es una de las métricas de error más usadas, tiene como desventaja que no está acotada superiormente y no tenemos un valor de referencia; solo podemos usarla en general para comparar los ajustes dentro de un mismo conjunto de datos, y no de manera absoluta.
+Además, aunque la métrica de error sea el MSE, para mostrar y discutir los resultados emplearemos siempre su raíz cuadrada (abreviada RMSE), simplemente porque de esa forma el error estará en unidades de la variable a predecir y facilitará su interpretación. Aunque esta es una de las métricas de error más usadas, tiene como desventaja que no está acotada superiormente y no tenemos un valor de referencia; solo podemos usarla en general para comparar los ajustes dentro de un mismo conjunto de datos, y no de manera absoluta.
 
 Para tener una medida absoluta de error consideramos también el coeficiente de determinación $R^2$. Este coeficiente indica la bondad del ajuste, tomando su máximo valor en $1$ (ajuste perfecto), y pudiendo tomar también valores negativos (a pesar de su nombre). Su definición es la siguiente:
 $$
@@ -403,7 +404,7 @@ Veamos ahora cuál ha sido el resultado de la selección de modelos y el desempe
 
 ## Clasificación
 
-Para el problema de clasificación, estudiamos el desempeño diferenciando las dos posibles estrategias de selección que teníamos. Utilizando PCA, el modelo triunfador ha sido el de **regresión logística**, con un valor de $1.0$ para la constante de regularización, obteniendo un accuracy en *cross-validation* de $98.718$% y usando finalmente $464$ variables para el ajuste. Tras reentrenar el modelo y evaluarlo, obtenemos un *accuracy* del $100$% en entrenamiento y un nada desdeñable $98.831$% en el conjunto de *test*.
+Para el problema de clasificación, estudiamos el desempeño diferenciando las dos posibles estrategias de selección que teníamos. Utilizando PCA, el modelo triunfador ha sido el de **regresión logística**, con un valor de $1.0$ para la constante de regularización, por lo que vemos que se trata de una regularización "neutra": ni muy agresiva ni muy suave. Obtenemos un accuracy en *cross-validation* de $98.718$% y usamos finalmente $464$ variables para el ajuste. Tras reentrenar el modelo y evaluarlo, obtenemos un *accuracy* del $100$% en entrenamiento y un nada desdeñable $98.831$% en el conjunto de *test*.
 
 Por otro lado, utilizando la estrategia de selección basada en el test ANOVA, obtenemos de nuevo que el mejor modelo es el de regresión logística, con la misma constante de regularización y usando $560$ variables. Esta vez conseguimos un *accuracy* de $98.561$% en *cross-validation*, de $100$% en entrenamiento, y de $97.551$% en *test*.
 
@@ -452,7 +453,7 @@ También podemos volver a proyectar sobre las dos primeras componentes principal
 \label{fig:scatter2}
 \end{figure}
 
-Finalmente, podemos mostrar  en la \ref{fig:lc_class} una gráfica de la *curva de aprendizaje* de nuestro modelo. Esta curva consiste en ir entrenando el modelo con porciones incrementales de nuestro conjunto de entrenamiento, reservando en cada caso un subconjunto de validación para ir evaluándolo en paralelo.
+Finalmente, podemos mostrar en la Figura \ref{fig:lc_class} una gráfica de la *curva de aprendizaje* de nuestro modelo. Esta curva consiste en ir entrenando el modelo con porciones incrementales de nuestro conjunto de entrenamiento, reservando en cada caso un subconjunto de validación para ir evaluándolo en paralelo.
 
 Podemos observar esta curva de aprendizaje en la primera gráfica, donde vemos que el *accuracy* en entrenamiento comienza en $0$, y va disminuyendo ligeramente conforme aumentamos el número de ejemplos. Por su parte el *accuracy* de validación va avanzando de manera inversa: va mejorando conforme aumentamos el número de ejemplos. Este es el comportamiento esperado, y de hecho podemos concluir que nuestro modelo aún no ha llegado al punto de saturación en el aprendizaje y se beneficiaría de disponer de maś ejemplos para entrenar, pues todavía no ha alcanzado el punto en el que el *accuracy* en validación comienza a disminuir. Notamos que la escala está aumentada para que veamos bien las diferencias, pero en realidad si viésemos el *accuracy* en escala $[0,1]$ apreciaríamos que las dos curvas están muy pegadas.
 
@@ -467,17 +468,17 @@ Las dos gráficas restantes nos dan una idea de la escalabilidad y el rendimient
 
 ### Estimación del error
 
-Finalmente pasamos a estimar el error del modelo. Como ya comentamos al principio de la sección [Técnicas y selección de modelos], el error de *cross-validation* es un buen estimador del error fuera de la muestra, y en general podremos esperar que $E_{out} \leq E_{cv}$ (aunque no está garantizado). Sin embargo, la mejor medida que podemos hacer en estas condiciones del error de generalización viene a partir de $E_{test}$, pues el conjunto de *test* no se ha usado en ninguna de las fases del entrenamiento y la selección de modelos, y por tanto nos proporciona una buena estimación de $E_{out}$. En este caso particular, como estamos utilizando como métrica el error de clasificación, es de aplicación la *cota de Hoeffding* que conocemos para el error en *test*, a saber:
+Finalmente pasamos a estimar el error del modelo. Como ya comentamos al principio de la sección [Técnicas y selección de modelos], el error de *cross-validation* es un buen estimador del error fuera de la muestra, y en general podremos esperar que $E_{out} \leq E_{cv}$ (aunque no está garantizado). Sin embargo, la mejor medida que podemos hacer en estas condiciones del error de generalización viene a partir de $E_{test}$, pues el conjunto de *test* no se ha usado en ninguna de las fases del entrenamiento y la selección de modelos, y por tanto nos proporciona una buena estimación de $E_{out}$, además de que para obtenerlo se ha entrenado y evaluado sobre más puntos que en el caso de *cross-validation*. En este caso particular, como estamos utilizando como métrica el error de clasificación, es de aplicación la *cota de Hoeffding* que conocemos para el error en *test*, a saber:
 $$E_{out}(g) \leq E_{test}(g) + \sqrt{\frac{1}{2N_{test}}\log \frac{2}{\delta}}, \quad \text{con probabilidad } \geq 1-\delta.$$
 Por ejemplo, fijando $\delta = 0.05$ podemos garantizar con un $95$% de confianza que
 $$
-E_{out} \leq 1.169 + \sqrt{\frac{1}{2\cdot 1797}\log\frac{2}{0.05}} \ \approx 1.20.
+E_{out} \leq 0.01169 + \sqrt{\frac{1}{2\cdot 1797}\log\frac{2}{0.05}} \ \approx 0.043.
 $$
-Es decir, si una empresa nos hubiera encargado realizar este ajuste, le diriamos que el modelo proporcionado tiene un error del $1.2$% con un $95$% de confianza.
+Es decir, si alguien nos hubiera encargado realizar este ajuste, le diriamos que el modelo proporcionado tiene un error del $4.3$% con un $95$% de confianza.
 
 ## Regresión
 
-Reproducimos ahora los resultados obtenidos para el problema de regresión. En este caso solo tenemos una estrategia de preprocesado, para la cual el modelo ganador ha sido **regresión lineal con penalización L1**, obteniendo un error RMSE de *cross-validation* de $0.139$, de $0.131$ en entrenamiento y de $0.128$ en el conjunto de *test*. La mejor constante de regularización encontrada es `alpha` $\approx$ 0.00078, utilizando finalmente 77 variables en el ajuste. Los resultados obtenidos sin utilizar ningún tipo de selección de variables son similares (ligeramente peores en el conjunto de *test*), pero ni siquiera los consideramos por usar un número demasiado elevado de variables (más de 5000). Por tanto, elegimos como hipótesis definitiva $g$ el modelo de regresión Lasso obtenido, cuyos resultados quedan recogidos en la siguiente tabla:
+Reproducimos ahora los resultados obtenidos para el problema de regresión. En este caso solo tenemos una estrategia de preprocesado, para la cual el modelo ganador ha sido **regresión lineal con penalización L1**, obteniendo un error RMSE de *cross-validation* de $0.139$, de $0.131$ en entrenamiento y de $0.128$ en el conjunto de *test*, utilizando finalmente 77 variables en el ajuste. La mejor constante de regularización encontrada es `alpha` $\approx$ 0.00078, una cantidad cuatro órdenes de magnitud por debajo de la que obtuvimos en el caso de clasificación (se trata de una regularización bastante suave). Los resultados obtenidos sin utilizar ningún tipo de selección de variables son similares (ligeramente peores en el conjunto de *test*), pero ni siquiera los consideramos por usar un número demasiado elevado de variables (más de 5000). Por tanto, elegimos como hipótesis definitiva $g$ el modelo de regresión Lasso obtenido, cuyos resultados quedan recogidos en la siguiente tabla:
 
 \begin{table}[h!]
 \centering
@@ -486,61 +487,90 @@ Reproducimos ahora los resultados obtenidos para el problema de regresión. En e
 & $RMSE_{cv}$ & $RMSE_{in}$ & $RMSE_{test}$ & $R^2_{in}$ & $R^2_{test}$ &  Tiempo \\ \hline
 PCA   & 0.139     & 0.131   & 0.128 & 0.684 & 0.702     & 2.599 \\ \hline
 \end{tabular}
-\caption{Tabla de resultados para el problema de regresión. El RMSE está en unidades de la variable a predecir, el $R^2$ en esas unidades al cuadrado, y el tiempo en segundo.}
+\caption{Tabla de resultados para el problema de regresión. El RMSE está en unidades de la variable a predecir, el $R^2$ es adimensional, y el tiempo está expresado en segundos.}
 \end{table}
 
 Vamos a ilustrar también en esta ocasión el proceso de entrenamiento y los resultado con algunas gráficas. En primer lugarm vemos en la Figura {fig:residues} una doble gráfica. La primera es una representación de los *residuos* del ajuste, definidos como las diferencias entre los valores predichos y los valores reales:
 $$
 R(y, h(x_n)) = y - h(x_n)
 $$
-Lo ideal es que estos valores estén cercanos a $0$, y que no presenten ninguna distribución que haga pensar que tienen cierta información subyacente que no hemos podido capturar en el ajuste. Por otro lado, la segunda gráfica muestra los valores predichos frente a los valores reales, junto con dos rectas: la recta identidad que sería un ajuste perfecto, y la recta que mejor aproxima la nube de puntos.
+Lo ideal es que estos valores estén cercanos a $0$, y que no presenten ninguna distribución que haga pensar que tienen cierta información subyacente que no hemos podido capturar en el ajuste. Representamos la recta que mejor ajusta los valores y vemos que es prácticamente horizontal, si bien hay algunos valores que se alejan bastante de ella. Por otro lado, la segunda gráfica muestra los valores predichos frente a los valores reales, junto con dos rectas: la recta identidad que sería un ajuste perfecto, y la recta que mejor aproxima la nube de puntos. Podemos ver como esta última recta está cerca de la identidad, por lo que consideramos que el ajuste es bueno, aunque podría ser mejorable.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=\textwidth]{img/regression/residues_error}
+\caption{Representación de los residuos y del error de predicción en el problema de regresión, en el conjunto de \textit{test}.}
+\label{fig:residues}
+\end{figure}
+
+Por otro lado podemos repetir el experimento que hicimos en el caso de clasificación y proyectar la primera componente principal del conjunto de *test* y la recta que lo ajusta (como proyección del hiperplano de regresión obtenido), y comprobamos visualmente en la Figura \ref{fig:scatter_reg} como esta recta se ajusta bastante bien a la nube de puntos que obtenemos.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8\textwidth]{img/regression/scatter_reg}
+\caption{Representación de la primera componente principal en \textit{test} junto a la proyección de la recta de ajuste.}
+\label{fig:scatter_reg}
+\end{figure}
+
+Finalmente volvemos a mostrar las gráficas de las curvas de aprendizaje, escalabilidad y rendimiento en la Figura \ref{fig:lc_reg}. El análisis que hacemos en este caso es muy similar al caso de clasificación, notando que ahora el eje vertical de la primera y tercera gráfica está "invertido" respecto a dicho caso, pues ahora como estamos representando el error los valores pequeños son mejores. Concluimos que el modelo aún tiene capacidad de seguir aprendiendo y se beneficiaría de más ejemplos de entrenamiento, pues el RMSE en validación aún sigue disminuyendo.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=\textwidth]{img/regression/learning_curve}
+\caption{Curvas de aprendizaje, escalabilidad y rendimiento para el regresor escogido.}
+\label{fig:lc_reg}
+\end{figure}
+
+### Estimación del error
+
+Las mismas conclusiones obtenidas en el caso de clasificación nos sirven aquí: el error de *cross-validation* obtenido es un estimador del error fuera de la muestra, pero preferimos utilizar la estimación proporcionada por el conjunto de *test*, el cual no ha sido visto previamente por el modelo en ningún caso. Recordamos que en *test* obteníamos un RMSE de $0.128$ y un $R^2$ de $0.702$. En este problema creo que no podemos aplicar directamente la cota de Hoeffding para dar una estimación probabilística del error fuera de la muestra, ya que esta se obtuvo utilizando como referencia el error de clasificación y no el de regresión (al menos, no hemos visto una justificación teórica que nos permita aplicarla). Hasta donde he podido determinar, no hemos visto en la asignatura una cota explícita de generalización para el caso de un problema de regresión lineal con función de error cuadrático.
+
+Nos contentamos entonces con dar la estimación directa del valor obtenido en *test*, sabiendo que este es un *proxy* para el error fuera de la muestra: estimamos que nuestro modelo tiene un RMSE alrededor de $0.128$, sin poder garantizar con los conocimientos actuales un intervalo concreto de confianza para el mismo.
 
 # Conclusiones y justificación
 
-- Recapitular modelos elegidos
-- - interpretar los errores.
+Concluimos aportando una visión global de todo el proceso seguido y evaluando la calidad del modelo lineal obtenido finalmente. Para ello compararemos los resultados con los que obtendría un estimador no lineal (un `Random Forest`) y un estimador aleatorio. Estos estimadores se entrenan directamente sobre el conjunto de datos sin preprocesado; no se pretende en la práctica ajustar el mejor modelo no lineal, sino que simplemente los usamos como punto de partida para una comparación.
 
-Clasificador no lineal para comparar
-(no se realiza preprocesado, explicar por qué, limitar profundidad)
+## Clasificación
 
-```
---- Clasificador no lineal (RandomForest) ---
-Número de árboles: 200
-Profundidad máxima: 32
-Número de variables usadas: 64
-Accuracy en training: 100.000%
-Accuracy en test: 97.440%
-Tiempo: 1.341s
+Ajustamos un modelo `RandomForestClassifier` con 200 árboles y una profundidad máxima de 32. Por otro lado, escogemos un clasificador *dummy* que predice siempre una clase arbitraria, con las probabilidades ponderadas por la frecuencia de cada clase en el conjunto (`DummyClassifier`). Recuperando los errores que obtuvimos con nuestro mejor modelo, regresión logística con penalización L2, estrategia *one-vs-all* y constante de regularización $1.0$, obtenemos la siguiente tabla:
 
-Clasificador dummy para comparar
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+& $E_{in}$ & $E_{test}$ \\ \hline
+\texttt{LogisticRegression}   & 0.000           & 1.169           \\ \hline
+\texttt{RandomForestClassifier}       & 0.000           & 2.560           \\ \hline
+\texttt{DummyClassifier} & 89.903          & 90.317            \\ \hline
+\end{tabular}
+\caption{Comparación de resultados en clasificación con un modelo no lineal y un clasificador aleatorio. Los errores se muestran en porcentaje.}
+\end{table}
 
---- Clasificador aleatorio ---
-Número de variables usadas: 64
-Accuracy en training: 10.097%
-Accuracy en test: 9.683%
-Tiempo: 0.002s
-```
+Vemos como los resultados obtenidos por nuestro clasificador lineal son competitivos con los obtenidos por un clasificador no lineal, y superan con creces a los que obtiene un clasificador aleatorio. Considero que hemos obtenido un buen modelo, con un error en el conjunto de *test* muy bajo, de poco más del $1$%. Además, este conjunto de *test* tiene la particularidad ya comentada de que contiene dígitos escritos por personas distintas a las que escribieron los del conjunto de entrenamiento, por lo que la confianza que tenemos en su capacidad de generalización es alta. Esto unido a la cota de generalización obtenida, que nos dice que el error fuera de la muestra será de alrededor de un 4% con alta probabilidad, nos hace pensar que hemos obtenido un modelo muy bueno y con suficiente precisión y estabilidad para la mayoría de aplicaciones.
+
+No se trata del modelo perfecto (algo muy difícil de conseguir), y ni siquiera podemos asegurar que sea el mejor modelo dentro de la clase lineal que hemos considerado, pues por la metodología seguida no hemos explorado todas las posibles combinaciones de modelos y parámetros. Sin embargo, es un modelo de calidad, que representa de forma adecuada los datos como hemos podido comprobar con la extensa visualización que hemos hecho a lo largo de los distintos apartados.
+
+En conclusión, hemos obtenido un muy buen ajuste en el conjunto de datos que nos proporcionaban, siendo competitivos con otros modelos no lineales mucho más complejos. Esto refuerza la idea de que muchas veces las técnicas más simples son suficientemente buenas en la mayoría de los casos; ante la duda, siempre se debe probar en primer lugar un modelo lineal.
 
 ## Regresión
 
-- núemro de variables pequeño aun tras aumento
+Repetimos los mismos pasos de comparación: ajustamos un modelo no lineal de tipo `RandomForestRegressor` con $200$ árboles y una profundidad máxima de $10$; y un regresor `DummyRegressor` que predice siempre la media de los atributos que recibe como entrada. Nuestro modelo en esta ocasión era regresión lineal con regularización L1 (`alpha` $\approx 0.00078$) y técnica de optimización basada en el descenso de coordenadas, que junto a los regresores de comparación nos proporciona la siguiente tabla:
 
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+& $RMSE_{in}$ & $RMSE_{test}$ & $R^2_{in}$ & $R^2_{test}$ \\ \hline
+\texttt{Lasso}    & 0.131   & 0.128 & 0.684 & 0.702 \\ \hline
+\texttt{RandomForestRegressor}    & 0.062   & 0.134 & 0.929 & 0.673 \\ \hline
+\texttt{DummyRegressor}    & 0.233   & 0.234 & 0.000 & 0.000 \\ \hline
+\end{tabular}
+\caption{Comparación de resultados en clasificación con un modelo no lineal y un clasificador aleatorio. El RMSE está en unidades de la variable a predecir y el $R^2$ es adimensional.}
+\end{table}
 
-```
---- Regresor no lineal (RandomForest) ---
-Número de árboles: 200
-Número de variables usadas: 100
-RMSE en training: 0.062
-R2 en training: 0.929
-RMSE en test: 0.134
-R2 en test: 0.673
-Tiempo: 9.659s
+Observamos como el clasificador *dummy* nos proporciona una medida relativa de base respecto a la que comparar el RMSE: cualquier regresor que se precie debería superar al obtenido por este regresor que estima la media. Vemos como nuestro modelo cumple ese objetivo, obteniendo un RMSE de más de casi la mitad en *test*. También superamos al RMSE obtenido por el modelo no lineal, aunque en este se observa un severo sobreajuste que debería ser corregido, pues en el conjunto de entrenamiento sí es el claro vencedor. Por su parte, el coeficiente de determinación del regresor *dummy* nos marca también una base sobre la que comparar, pues el mínimo al que deberíamos aspirar es a superar este valor de $0.0$, cosa que conseguimos sobradamente. De nuevo en la comparación con el modelo no lineal "básico" (sin ajuste fino) sale ganando nuestro regresor lineal, si bien no por mucho: 0.702 frente a 0.673 en el conjunto de *test*.
 
---- Regresor aleatorio ---
-Número de variables usadas: 100
-RMSE en training: 0.233
-R2 en training: 0.000
-RMSE en test: 0.234
-R2 en test: -0.001
-Tiempo: 0.000s
-```
+El RMSE más pequeño posible que podríamos obtener es $0.0$, y el $R^2$ más grande sería $1.0$. Vemos cómo no nos hemos quedado muy lejos de este objetivo ideal con nuestro ajuste, aunque se observa que aún hay cierto margen de mejora (estamos cometiendo un error de media en el ajuste de $0.128$ en unidades normalizadas de la variable a predecir). Además, con una adecuada técnica de selección hemos conseguido un número de variables reducido (un 63% del total) aún habiendo hecho transformaciones polinómicas de las originales, aumentando así el poder predictivo sin sacrificar demasiado la simplicidad del modelo. Es probable que podamos encontrar modelos, incluso lineales, que tengan un mejor desempeño que el que hemos obtenido, pero creo que hemos cumplido el objetivo de lograr un buen ajuste que representa fielmente los datos del conjunto con el que hemos trabajado, como ya hemos visto con las distintas representaciones gráficas mostradas.
+
+Podemos decir que hemos obtenido un modelo con un error aceptable, buena capacidad de generalización y sobre todo, bastante simple dentro de toda la gama disponible en el campo del aprendizaje automático, por lo que consideramos que hemos tenido éxito en el ajuste realizado.
