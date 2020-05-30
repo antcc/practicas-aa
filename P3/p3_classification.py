@@ -67,31 +67,6 @@ def read_data(filename):
     data = np.genfromtxt(filename, delimiter = ",", dtype = np.double)
     return data[:, :-1], data[:, -1]
 
-def preprocess_pipeline(selection_strategy = Selection.PCA):
-    """Construye una lista de transformaciones para el
-       preprocesamiento de datos, con transformaciones polinómicas
-       de grado 2 y diferentes estrategias para realizar selección
-       de variables."""
-
-    # Reducción de dimensionalidad
-    if selection_strategy == Selection.PCA:
-        preproc = [
-            ("selection", PCA(0.95)),
-            ("standardize", StandardScaler()),
-            ("poly", PolynomialFeatures(2)),
-            ("var", VarianceThreshold(0.1)),
-            ("standardize2", StandardScaler())]
-
-    # Selección de variables
-    else:
-        preproc = [
-            ("standardize", StandardScaler()),
-            ("poly", PolynomialFeatures(2)),
-            ("var", VarianceThreshold(0.1)),
-            ("standardize2", StandardScaler())]
-
-    return preproc
-
 def classification_fit(compare = False, selection_strategy = Selection.PCA, show = 0):
     """Ajuste de un modelo lineal para resolver un problema de clasificación.
        Opcionalmente se puede ajustar también un modelo no lineal (RandomForest)
@@ -112,8 +87,23 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
     X_test, y_test = read_data(PATH + "optdigits.tes")
     print("Hecho.")
 
-    # Construimos pipeline para preprocesado
-    preproc = preprocess_pipeline(selection_strategy)
+    # Establecemos la técnica de selección de variables
+    if selection_strategy == Selection.PCA:
+        preproc = [("selection", PCA(0.95))]
+
+    elif selection_strategy == Selection.ANOVA:
+        preproc = [
+            ("var2", VarianceThreshold()),
+            ("selection", SelectKBest(f_classif, k = 32))]
+    else:
+        preproc = []
+
+    # Completamos el cauce de preprocesado
+    preproc += [
+        ("standardize", StandardScaler()),
+        ("poly", PolynomialFeatures(2)),
+        ("var", VarianceThreshold(0.1)),
+        ("standardize2", StandardScaler())]
     preproc_pipe = Pipeline(preproc)
 
     # Obtenemos los datos preprocesados por si los necesitamos
@@ -121,9 +111,6 @@ def classification_fit(compare = False, selection_strategy = Selection.PCA, show
     X_test_pre = preproc_pipe.transform(X_test)
 
     # Construimos un pipeline de preprocesado + clasificación
-    if selection_strategy == Selection.ANOVA:
-        preproc += [("var2", VarianceThreshold()),
-                    ("selection", SelectKBest(f_classif, k = X_train_pre.shape[1] // 3))]
     pipe = Pipeline(preproc + [("clf", LogisticRegression())])
 
     if show > 0:

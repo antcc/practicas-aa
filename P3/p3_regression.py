@@ -114,7 +114,7 @@ def regression_fit(compare = False, show = 0):
     # Cargamos los datos de entrenamiento y test
     print("Cargando datos de entrenamiento y test... ", end = "", flush = True)
     X_train, X_test, y_train, y_test = \
-        load_and_split_data(PATH + "communities.data")
+        load_and_split_data(PATH + "communities.data", test_size = 0.2)
     print("Hecho.")
 
     if show > 0:
