@@ -230,7 +230,7 @@ def regression_fit(compare = False, show = 0):
         print_evaluation_metrics(nonlinear_reg, X_train, X_test, y_train, y_test)
         print("Tiempo: {:.3f}s".format(elapsed))
 
-        # Elegimos un regresor aleatorio
+        # Elegimos un regresor dummy
         dummy_reg = DummyRegressor(strategy = 'mean')
 
         # Ajustamos el modelo
