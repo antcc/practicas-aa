@@ -234,14 +234,14 @@ def regression_fit(compare = False, show = 0):
         dummy_reg = DummyRegressor(strategy = 'mean')
 
         # Ajustamos el modelo
-        print("\nAjustando regresor aleatorio... ", end = "", flush = True)
+        print("\nAjustando regresor dummy... ", end = "", flush = True)
         start = default_timer()
         dummy_reg.fit(X_train, y_train)
         elapsed = default_timer() - start
         print("Hecho.\n")
 
         # Mostramos los resultados
-        print("--- Regresor aleatorio ---")
+        print("--- Regresor dummy ---")
         print("Número de variables usadas: {}".format(X_train.shape[1]))
         print_evaluation_metrics(dummy_reg, X_train, X_test, y_train, y_test)
         print("Tiempo: {:.3f}s".format(elapsed))
