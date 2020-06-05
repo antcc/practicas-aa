@@ -533,7 +533,7 @@ Concluimos aportando una visión global de todo el proceso seguido y evaluando l
 
 ## Clasificación
 
-Ajustamos un modelo `RandomForestClassifier` con 200 árboles y una profundidad máxima de 32. Por otro lado, escogemos un clasificador *dummy* que predice siempre una clase arbitraria, con las probabilidades ponderadas por la frecuencia de cada clase en el conjunto (`DummyClassifier`). Recuperando los errores que obtuvimos con nuestro mejor modelo, regresión logística con penalización L2, estrategia *one-vs-all* y constante de regularización $1.0$, obtenemos la siguiente tabla:
+Ajustamos un modelo `RandomForestClassifier` con 200 árboles y una profundidad máxima de 32. Por otro lado, escogemos un clasificador *dummy* que predice siempre una clase arbitraria, con las probabilidades ponderadas por la frecuencia de cada clase en el conjunto (`DummyClassifier`). Recuperando los errores que obtuvimos con nuestro mejor modelo, regresión logística con penalización L2, estrategia *one-vs-all* y constante de regularización $1.0$, obtenemos una tabla como la Tabla \ref{tab:class}.
 
 \begin{table}[h!]
 \centering
@@ -545,6 +545,7 @@ Ajustamos un modelo `RandomForestClassifier` con 200 árboles y una profundidad 
 \texttt{DummyClassifier} & 89.903          & 90.317            \\ \hline
 \end{tabular}
 \caption{Comparación de resultados en clasificación con un modelo no lineal y un clasificador aleatorio. Los errores se muestran en porcentaje.}
+\label{tab:class}
 \end{table}
 
 Vemos como los resultados obtenidos por nuestro clasificador lineal son competitivos con los obtenidos por un clasificador no lineal, y superan con creces a los que obtiene un clasificador aleatorio. Considero que hemos obtenido un buen modelo, con un error en el conjunto de *test* muy bajo, de poco más del $1$%. Además, este conjunto de *test* tiene la particularidad ya comentada de que contiene dígitos escritos por personas distintas a las que escribieron los del conjunto de entrenamiento, por lo que la confianza que tenemos en su capacidad de generalización es alta. Esto unido a la cota de generalización obtenida, que nos dice que el error fuera de la muestra será de alrededor de un 4% con alta probabilidad, nos hace pensar que hemos obtenido un modelo muy bueno y con suficiente precisión y estabilidad para la mayoría de aplicaciones.
