@@ -306,6 +306,7 @@ $$
 $$
 L_{reg}(w) = L(w) + \lambda \sum_i |w_i|.
 $$
+
 En ambos casos el valor de $\lambda > 0$ es un hiperparámetro del modelo, que controla la intensidad de la regularización (a mayor valor, más pequeños serán los pesos). Encontrar un valor adecuado es una tarea complicada, pues si es demasiado pequeño seguiremos teniendo sobreajuste, pero si es demasiado grande podríamos caer en el fenómeno opuesto: tener *underfitting* porque el modelo sea poco flexible y no consiga ajustar bien los datos de entrenamiento.
 
 ## Clasificación
@@ -472,7 +473,7 @@ Finalmente pasamos a estimar el error del modelo. Como ya comentamos al principi
 $$E_{out}(g) \leq E_{test}(g) + \sqrt{\frac{1}{2N_{test}}\log \frac{2}{\delta}}, \quad \text{con probabilidad } \geq 1-\delta.$$
 Por ejemplo, fijando $\delta = 0.05$ podemos garantizar con un $95$% de confianza que
 $$
-E_{out} \leq 0.01169 + \sqrt{\frac{1}{2\cdot 1797}\log\frac{2}{0.05}} \ \approx 0.043.
+E_{out}(g) \leq 0.01169 + \sqrt{\frac{1}{2\cdot 1797}\log\frac{2}{0.05}} \ \approx 0.043.
 $$
 Es decir, si alguien nos hubiera encargado realizar este ajuste, le diriamos que el modelo proporcionado tiene un error del $4.3$% con un $95$% de confianza.
 
@@ -523,7 +524,7 @@ Finalmente volvemos a mostrar las gráficas de las curvas de aprendizaje, escala
 
 ### Estimación del error
 
-Las mismas conclusiones obtenidas en el caso de clasificación nos sirven aquí: el error de *cross-validation* obtenido es un estimador del error fuera de la muestra, pero preferimos utilizar la estimación proporcionada por el conjunto de *test*, el cual no ha sido visto previamente por el modelo en ningún caso. Recordamos que en *test* obteníamos un RMSE de $0.128$ y un $R^2$ de $0.702$. En este problema creo que no podemos aplicar directamente la cota de Hoeffding para dar una estimación probabilística del error fuera de la muestra, ya que esta se obtuvo utilizando como referencia el error de clasificación y no el de regresión (al menos, no hemos visto una justificación teórica que nos permita aplicarla). Hasta donde he podido determinar, no hemos visto en la asignatura una cota explícita de generalización para el caso de un problema de regresión lineal con función de error cuadrático.
+Las mismas conclusiones obtenidas en el caso de clasificación nos sirven aquí: el error de *cross-validation* obtenido es un estimador del error fuera de la muestra, pero preferimos utilizar la estimación proporcionada por el conjunto de *test*, el cual no ha sido visto previamente por el modelo en ningún caso. Recordamos que en *test* obteníamos un RMSE de $0.128$ y un $R^2$ de $0.702$. En este problema creo que no podemos aplicar directamente la cota de Hoeffding para dar una estimación probabilística del error fuera de la muestra, ya que esta se obtuvo utilizando como referencia el error de clasificación y no el de regresión. Hasta donde he podido determinar, no hemos visto en la asignatura una cota explícita de generalización para el caso de un problema de regresión lineal con función de error cuadrático.
 
 Nos contentamos entonces con dar la estimación directa del valor obtenido en *test*, sabiendo que este es un *proxy* para el error fuera de la muestra: estimamos que nuestro modelo tiene un RMSE alrededor de $0.128$, sin poder garantizar con los conocimientos actuales un intervalo concreto de confianza para el mismo.
 
